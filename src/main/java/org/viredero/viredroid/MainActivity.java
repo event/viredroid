@@ -80,6 +80,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     private FloatBuffer mCubeVertices;
     private ShortBuffer mCubeIndices;
+    private int cubeVerticesSize;
+    private int cubeIndicesSize;
     private FloatBuffer mCubeColors;
     private FloatBuffer mCubeNormals;
     private int[] vbo = new int[1];
@@ -230,6 +232,80 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
 
     private void fillCubeCoords() {
+        int stacks = 5;
+        int slices = 5;
+        float width = 10.0f;
+        float height = 7.0f;
+        float depth = 3.0f;
+
+        ByteBuffer bbVertices = ByteBuffer.allocateDirect(
+            stacks * slices
+            * (COORDS_PER_VERTEX + COORDS_PER_NORMAL + COORDS_PER_COLOR)
+            * BYTES_PER_FLOAT * 4);
+        bbVertices.order(ByteOrder.nativeOrder());
+        mCubeVertices = bbVertices.asFloatBuffer();
+
+        ByteBuffer bbIndices = ByteBuffer.allocateDirect(
+            (stacks - 1) * 2 * (slices + 2) * BYTES_PER_SHORT);
+        bbIndices.order(ByteOrder.nativeOrder());
+        mCubeIndices = bbIndices.asShortBuffer();
+
+
+        float v_sector = (float)Math.PI / (stacks - 1);
+        float h_sector = (float)Math.PI / (slices - 1);
+        
+        for (int i = 0; i < stacks; i += 1) {
+            float y = (float)Math.cos(i * v_sector) * height;
+            for (int j = 0; j < slices; j += 1) {
+                float x = (float)Math.cos(j * h_sector) * width;
+                float z = (float)Math.sin(j * h_sector) * depth;
+                mCubeVertices.put(new float[]{
+                        x, y, z, -x, -y, -z
+                        , 0f, 0.5273f, 0.2656f, 1.0f});
+            }
+            if (i < stacks - 1) {
+                if (i > 0) {
+                    // Degenerate begin: repeat first vertex
+                    mCubeIndices.put((short)(i * slices));
+                }
+                for (int j = 0; j < slices; j += 1) {
+                    // One part of the strip
+                    mCubeIndices.put((short)(i * slices + j));
+                    mCubeIndices.put((short)((i + 1) * slices + j));
+                }
+                if (i < stacks - 2) {
+                    // Degenerate end: repeat last vertex
+                    mCubeIndices.put(mCubeIndices.get(mCubeIndices.position() - 1));
+                }
+            }
+        }
+        cubeIndicesSize = mCubeIndices.position();
+        cubeVerticesSize = mCubeVertices.position();
+        mCubeIndices.position(0);
+        mCubeVertices.position(0);
+        GLES20.glGenBuffers(1, vbo, 0);
+        GLES20.glGenBuffers(1, ibo, 0);
+        if (vbo[0] <= 0 && ibo[0] <= 0) {
+            checkGLError("buffer generation");
+        }
+        Log.i(TAG, "!!!" + mCubeVertices  + "  " + mCubeVertices.remaining()
+              + " " + cubeVerticesSize + " " + (cubeVerticesSize * BYTES_PER_FLOAT));
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
+        GLES20.glBufferData(
+	    GLES20.GL_ARRAY_BUFFER
+	    , cubeVerticesSize * BYTES_PER_FLOAT
+	    , mCubeVertices, GLES20.GL_STATIC_DRAW);
+ 
+        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
+        GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, cubeIndicesSize * BYTES_PER_SHORT
+                            , mCubeIndices, GLES20.GL_STATIC_DRAW);
+        
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+    }
+    
+    private void ____fillCubeCoords() {
+            
         int idx = 0;
         mCubeVertices.put(
             new float[]{-1.0f, 0f, 0f
@@ -266,8 +342,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     }
     
     private void __fillCubeCoords() {
-        // int stacks = 3;
-        // int slices = 3;
         // float radius = 1.0f;
         // float pi_stacks = (float)Math.PI / stacks;
         // float pi_slices = (float)Math.PI / slices;
@@ -337,14 +411,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     public void onSurfaceCreated(EGLConfig config) {
         Log.i(TAG, "onSurfaceCreated");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well.
-
-        ByteBuffer bbVertices = ByteBuffer.allocateDirect(110 * 3 * 4);
-        bbVertices.order(ByteOrder.nativeOrder());
-        mCubeVertices = bbVertices.asFloatBuffer();
-
-        ByteBuffer bbIndices = ByteBuffer.allocateDirect(110 * 3 * 4);
-        bbIndices.order(ByteOrder.nativeOrder());
-        mCubeIndices = bbIndices.asShortBuffer();
 
         ByteBuffer bbColors = ByteBuffer.allocateDirect(110 * 4 * 4);
         bbColors.order(ByteOrder.nativeOrder());
@@ -554,7 +620,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 // Draw
         GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
         GLES20.glDrawElements(GLES20.GL_TRIANGLE_STRIP
-			      , 4
+			      , cubeIndicesSize
                               , GLES20.GL_UNSIGNED_SHORT, 0);
  
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
