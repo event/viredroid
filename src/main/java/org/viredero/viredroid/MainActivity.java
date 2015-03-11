@@ -62,10 +62,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static final int COORDS_PER_TEXTURE = 2;
     private static final int BYTES_PER_FLOAT = 4;
     private static final int BYTES_PER_SHORT = 2;
-    
-    private static final int STRIDE  = BYTES_PER_FLOAT * (COORDS_PER_TEXTURE
-							  + COORDS_PER_NORMAL
-							  + COORDS_PER_COLOR);
+/** Store our model data in a float buffer. */
+ 
+/** This will be used to pass in the texture. */
+ 
+/** This will be used to pass in model texture coordinate information. */
     
     private static final WorldLayoutData DATA = new WorldLayoutData();
 
@@ -80,10 +81,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     private FloatBuffer mCubeVertices;
     private ShortBuffer mCubeIndices;
-    private int cubeVerticesSize;
-    private int cubeIndicesSize;
     private FloatBuffer mCubeColors;
     private FloatBuffer mCubeNormals;
+    private FloatBuffer mCubeTextures;
+    private int cubeIndicesSize;
+
     private int[] vbo = new int[1];
     private int[] ibo = new int[1];
 
@@ -93,10 +95,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private int mCubePositionParam;
     private int mCubeNormalParam;
     private int mCubeColorParam;
+    private int mCubeTexParam;
     private int mCubeModelParam;
     private int mCubeModelViewParam;
     private int mCubeModelViewProjectionParam;
     private int mCubeLightPosParam;
+    private int mCubeTexUnihandle;
+ 
+    private int mTextureDataHandle;
 
     private int mFloorPositionParam;
     private int mFloorNormalParam;
@@ -115,7 +121,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float[] mModelFloor;
 
     private int mScore = 0;
-    private float mObjectDistance = 12f;
+    private float mObjectDistance = 20f;
     private float mFloorDepth = 20f;
 
     private Vibrator mVibrator;
@@ -230,26 +236,64 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Log.i(TAG, "onSurfaceChanged");
     }
 
+    public static int loadTexture(final int resourceId) {
+        final int[] textureHandle = new int[1];
+ 
+        GLES20.glGenTextures(1, textureHandle, 0);
+ 
+        if (textureHandle[0] != 0) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inScaled = false;   // No pre-scaling
+ 
+            // Read in the resource
+            final Bitmap bitmap = BitmapFactory.decodeResource(
+                getResources(), resourceId, options);
+ 
+            // Bind to the texture in OpenGL
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
+ 
+            // Set filtering
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+ 
+            // Load the bitmap into the bound texture.
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
+ 
+            // Recycle the bitmap, since its data has been loaded into OpenGL.
+            bitmap.recycle();
+        }
+ 
+        if (textureHandle[0] == 0) {
+            throw new RuntimeException("Error loading texture.");
+        }
+ 
+        return textureHandle[0];
+    }
 
     private void fillCubeCoords() {
-        int stacks = 5;
-        int slices = 5;
+        int stacks = 50;
+        int slices = 50;
         float width = 10.0f;
         float height = 7.0f;
-        float depth = 3.0f;
+        float depth = -5.0f;
 
-        ByteBuffer bbVertices = ByteBuffer.allocateDirect(
-            stacks * slices
-            * (COORDS_PER_VERTEX + COORDS_PER_NORMAL + COORDS_PER_COLOR)
-            * BYTES_PER_FLOAT * 4);
-        bbVertices.order(ByteOrder.nativeOrder());
-        mCubeVertices = bbVertices.asFloatBuffer();
-
-        ByteBuffer bbIndices = ByteBuffer.allocateDirect(
-            (stacks - 1) * 2 * (slices + 2) * BYTES_PER_SHORT);
-        bbIndices.order(ByteOrder.nativeOrder());
-        mCubeIndices = bbIndices.asShortBuffer();
-
+        mCubeVertices = ByteBuffer.allocateDirect(
+            stacks * slices * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeNormals = ByteBuffer.allocateDirect(
+            stacks * slices * COORDS_PER_NORMAL * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeColors = ByteBuffer.allocateDirect(
+            stacks * slices * COORDS_PER_COLOR * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeTextures = ByteBuffer.allocateDirect(
+            stacks * slices * COORDS_PER_TEXTURE * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeIndices = ByteBuffer.allocateDirect(
+            (stacks - 1) * 2 * (slices + 2) * BYTES_PER_SHORT)
+            .order(ByteOrder.nativeOrder()).asShortBuffer();
 
         float v_sector = (float)Math.PI / (stacks - 1);
         float h_sector = (float)Math.PI / (slices - 1);
@@ -259,10 +303,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             for (int j = 0; j < slices; j += 1) {
                 float x = (float)Math.cos(j * h_sector) * width;
                 float z = (float)Math.sin(j * h_sector) * depth;
-                mCubeVertices.put(new float[]{
-                        x, y, z, -x, -y, -z
-                        , 0f, 0.5273f, 0.2656f, 1.0f});
-            }
+                mCubeVertices.put(new float[]{x, y, z});
+                mCubeNormals.put(new float[]{-x, -y, -z});
+                mCubeColors.put(new float[]{0f, 0.5273f, 0.2656f, 1.0f});
+                mCubeTextures.put(new float[]{  })
+	    }
             if (i < stacks - 1) {
                 if (i > 0) {
                     // Degenerate begin: repeat first vertex
@@ -280,65 +325,56 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             }
         }
         cubeIndicesSize = mCubeIndices.position();
-        cubeVerticesSize = mCubeVertices.position();
+	StringBuilder tst = new StringBuilder().append("!!!i ");
         mCubeIndices.position(0);
         mCubeVertices.position(0);
-        GLES20.glGenBuffers(1, vbo, 0);
-        GLES20.glGenBuffers(1, ibo, 0);
-        if (vbo[0] <= 0 && ibo[0] <= 0) {
-            checkGLError("buffer generation");
-        }
-        Log.i(TAG, "!!!" + mCubeVertices  + "  " + mCubeVertices.remaining()
-              + " " + cubeVerticesSize + " " + (cubeVerticesSize * BYTES_PER_FLOAT));
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
-        GLES20.glBufferData(
-	    GLES20.GL_ARRAY_BUFFER
-	    , cubeVerticesSize * BYTES_PER_FLOAT
-	    , mCubeVertices, GLES20.GL_STATIC_DRAW);
- 
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
-        GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, cubeIndicesSize * BYTES_PER_SHORT
-                            , mCubeIndices, GLES20.GL_STATIC_DRAW);
-        
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
-    }
-    
-    private void ____fillCubeCoords() {
-            
-        int idx = 0;
+        mCubeNormals.position(0);
+        mCubeColors.position(0);
+    }   
+
+    private void _fillCubeCoords() {
+        mCubeVertices = ByteBuffer.allocateDirect(3 * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeNormals = ByteBuffer.allocateDirect(3 * COORDS_PER_NORMAL * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeColors = ByteBuffer.allocateDirect(3 * COORDS_PER_COLOR * BYTES_PER_FLOAT)
+            .order(ByteOrder.nativeOrder()).asFloatBuffer();
+        mCubeIndices = ByteBuffer.allocateDirect(4 * BYTES_PER_SHORT)
+            .order(ByteOrder.nativeOrder()).asShortBuffer();
+
         mCubeVertices.put(
             new float[]{-1.0f, 0f, 0f
-                        , 0f, 0f, 1f
-                        , 0f, 0.5273f, 0.2656f, 1.0f
-                        
                         , -.5f, 1.0f, 0f
+                        , 0f, 0f, 0f}).position(0);
+        mCubeNormals.put(
+            new float[]{0f, 0f, 1f
                         , 0f, 0f, 1f
-                        , 0f, 0.5273f, 0.2656f, 1.0f
-                        
-                        , 0f, 0f, 0f
-                        , 0f, 0f, 1f
-                        , 0f, 0.5273f, 0.2656f, 1.0f}).position(0);
+                        , 0f, 0f, 1f}).position(0);
+        mCubeColors.put(
+            new float[] {0f, 0.5273f, 0.2656f, 1.0f
+                         , 0f, 0.5273f, 0.2656f, 1.0f
+                         , 0f, 0.5273f, 0.2656f, 1.0f}).position(0);
         mCubeIndices.put(
             new short[]{0, 1, 2, 2}).position(0);
-        GLES20.glGenBuffers(1, vbo, 0);
-        GLES20.glGenBuffers(1, ibo, 0);
-        if (vbo[0] <= 0 && ibo[0] <= 0) {
-            checkGLError("buffer generation");
-        }
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
-        GLES20.glBufferData(
-	    GLES20.GL_ARRAY_BUFFER
-	    , 3 * (COORDS_PER_VERTEX + COORDS_PER_NORMAL + COORDS_PER_COLOR)
-	        * BYTES_PER_FLOAT
-	    , mCubeVertices, GLES20.GL_STATIC_DRAW);
+        // GLES20.glGenBuffers(1, vbo, 0);
+        // GLES20.glGenBuffers(1, ibo, 0);
+        // if (ibo[0] <= 0) {
+        //     checkGLError("buffer generation");
+        // }
+        // GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
+        // GLES20.glBufferData(
+	//     GLES20.GL_ARRAY_BUFFER
+	//     , 3 * (COORDS_PER_VERTEX + COORDS_PER_NORMAL + COORDS_PER_COLOR)
+	//          * BYTES_PER_FLOAT
+	//      , mCubeVertices, GLES20.GL_STATIC_DRAW);
  
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
-        GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 4 * BYTES_PER_SHORT
-                            , mCubeIndices, GLES20.GL_STATIC_DRAW);
+        // GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
+        // GLES20.glBufferData(GLES20.GL_ELEMENT_ARRAY_BUFFER, 4 * BYTES_PER_SHORT
+        //                     , mCubeIndices, GLES20.GL_STATIC_DRAW);
         
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+        // GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+        // GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+        cubeIndicesSize = 3;
     }
     
     private void __fillCubeCoords() {
@@ -412,13 +448,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Log.i(TAG, "onSurfaceCreated");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well.
 
-        ByteBuffer bbColors = ByteBuffer.allocateDirect(110 * 4 * 4);
-        bbColors.order(ByteOrder.nativeOrder());
-        mCubeColors = bbColors.asFloatBuffer();
-
-        ByteBuffer bbNormals = ByteBuffer.allocateDirect(110 * 3 * 4);
-        bbNormals.order(ByteOrder.nativeOrder());
-        mCubeNormals = bbNormals.asFloatBuffer();
         fillCubeCoords();
         // make a floor
         ByteBuffer bbFloorVertices = ByteBuffer.allocateDirect(DATA.FLOOR_COORDS.length * 4);
@@ -448,16 +477,19 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glLinkProgram(mCubeProgram);
         GLES20.glUseProgram(mCubeProgram);
 
+        mTextureDataHandle = loadTexture(R.drawable.bumpy_bricks_public_domain);
         checkGLError("Cube program");
 
         mCubePositionParam = GLES20.glGetAttribLocation(mCubeProgram, "a_Position");
         mCubeNormalParam = GLES20.glGetAttribLocation(mCubeProgram, "a_Normal");
         mCubeColorParam = GLES20.glGetAttribLocation(mCubeProgram, "a_Color");
+        mCubeTexParam = GLES20.glGetAttribLocation(mCubeProgram, "a_TexCoord");
 
         mCubeModelParam = GLES20.glGetUniformLocation(mCubeProgram, "u_Model");
         mCubeModelViewParam = GLES20.glGetUniformLocation(mCubeProgram, "u_MVMatrix");
         mCubeModelViewProjectionParam = GLES20.glGetUniformLocation(mCubeProgram, "u_MVP");
         mCubeLightPosParam = GLES20.glGetUniformLocation(mCubeProgram, "u_LightPos");
+        mCubeTexUnihandle = GLES20.glGetUniformLocation(mCubeProgram, "u_Texture");
 
         GLES20.glEnableVertexAttribArray(mCubePositionParam);
         GLES20.glEnableVertexAttribArray(mCubeNormalParam);
@@ -570,7 +602,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         // Set mModelView for the floor, so we draw floor in the correct location
         Matrix.multiplyMM(mModelView, 0, mView, 0, mModelFloor, 0);
         Matrix.multiplyMM(mModelViewProjection, 0, perspective, 0,
-            mModelView, 0);
+                          mModelView, 0);
         drawFloor();
     }
 
@@ -586,25 +618,31 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     public void drawCube() {
         GLES20.glUseProgram(mCubeProgram);
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+ 
+        // Bind the texture to this unit.
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandle);
+ 
+        // Tell the texture uniform sampler to use this texture in the shader by binding to texture unit 0.
+        GLES20.glUniform1i(mCubeTexUnihandle, 0);// Draw
+//        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vbo[0]);
  
 // Bind Attributes
-        GLES20.glVertexAttribPointer(
-            mCubePositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT
-            , false, STRIDE, 0);
-        GLES20.glEnableVertexAttribArray(mCubePositionParam);
+        // Set the position of the surface
+        GLES20.glVertexAttribPointer(mCubePositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT
+                                     , false, 0, mCubeVertices);
+
+        // Set the normal positions of the surface, again for shading
+        GLES20.glVertexAttribPointer(mCubeNormalParam, COORDS_PER_NORMAL, GLES20.GL_FLOAT
+                                     , false, 0, mCubeNormals);
+
+        GLES20.glVertexAttribPointer(mCubeColorParam, COORDS_PER_COLOR, GLES20.GL_FLOAT
+                                     , false, 0, mCubeColors);
  
-        GLES20.glVertexAttribPointer(
-            mCubeNormalParam, COORDS_PER_NORMAL, GLES20.GL_FLOAT
-            , false, STRIDE, COORDS_PER_VERTEX * BYTES_PER_FLOAT);
-        GLES20.glEnableVertexAttribArray(mCubeNormalParam);
- 
-        GLES20.glVertexAttribPointer(
-            mCubeColorParam, COORDS_PER_COLOR, GLES20.GL_FLOAT
-            , false, STRIDE
-            , (COORDS_PER_VERTEX + COORDS_PER_NORMAL) * BYTES_PER_FLOAT);
-        GLES20.glEnableVertexAttribArray(mCubeColorParam);
- 
+        GLES20.glVertexAttribPointer(mCubeTexParam, COORDS_PER_TEXTURE
+                                     , GLES20.GL_FLOAT, false, 0, mCubeTextures);
+
+
         GLES20.glUniform3fv(mCubeLightPosParam, 1, mLightPosInEyeSpace, 0);
 
         // Set the Model in the shader, used to calculate lighting
@@ -617,14 +655,13 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glUniformMatrix4fv(mCubeModelViewProjectionParam, 1
                                   , false, mModelViewProjection, 0);
 
-// Draw
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
+//        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, ibo[0]);
         GLES20.glDrawElements(GLES20.GL_TRIANGLE_STRIP
 			      , cubeIndicesSize
-                              , GLES20.GL_UNSIGNED_SHORT, 0);
+                              , GLES20.GL_UNSIGNED_SHORT, mCubeIndices);
  
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
-        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
+//        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0);
+//        GLES20.glBindBuffer(GLES20.GL_ELEMENT_ARRAY_BUFFER, 0);
 
         checkGLError("Drawing cube");
     }
@@ -644,11 +681,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glUniformMatrix4fv(mFloorModelParam, 1, false, mModelFloor, 0);
         GLES20.glUniformMatrix4fv(mFloorModelViewParam, 1, false, mModelView, 0);
         GLES20.glUniformMatrix4fv(mFloorModelViewProjectionParam, 1, false,
-                mModelViewProjection, 0);
+                                  mModelViewProjection, 0);
         GLES20.glVertexAttribPointer(mFloorPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
-                false, 0, mFloorVertices);
+                                     false, 0, mFloorVertices);
         GLES20.glVertexAttribPointer(mFloorNormalParam, 3, GLES20.GL_FLOAT, false, 0,
-                mFloorNormals);
+                                     mFloorNormals);
         GLES20.glVertexAttribPointer(mFloorColorParam, 4, GLES20.GL_FLOAT, false, 0, mFloorColors);
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
@@ -692,7 +729,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         mObjectDistance = (float) Math.random() * 15 + 5;
         float objectScalingFactor = mObjectDistance / oldObjectDistance;
         Matrix.scaleM(rotationMatrix, 0, objectScalingFactor, objectScalingFactor,
-                objectScalingFactor);
+                      objectScalingFactor);
         Matrix.multiplyMV(posVec, 0, rotationMatrix, 0, mModelCube, 12);
 
         // Now get the up or down angle, between -20 and 20 degrees.
