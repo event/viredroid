@@ -25,10 +25,13 @@ import com.google.vrtoolkit.cardboard.Viewport;
 import android.content.Context;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
+import android.opengl.GLUtils;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
 import android.util.FloatMath;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -236,7 +239,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Log.i(TAG, "onSurfaceChanged");
     }
 
-    public static int loadTexture(final int resourceId) {
+    private int loadTexture(final int resourceId) {
         final int[] textureHandle = new int[1];
  
         GLES20.glGenTextures(1, textureHandle, 0);
@@ -297,17 +300,44 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         float v_sector = (float)Math.PI / (stacks - 1);
         float h_sector = (float)Math.PI / (slices - 1);
-        
+        // FIXME: coords have to be changed to array of x,z and array of y's
+        //         and combined to mCubeVertices
+        float[] ys = new float[stacks];
+        float[] xzs = new float[slices * 2];
+        float[] dws = new float[slices];
         for (int i = 0; i < stacks; i += 1) {
-            float y = (float)Math.cos(i * v_sector) * height;
+             ys[i] = (float)Math.cos(i * v_sector) * height;
+        }
+        float realw = 0f;
+        float oldx = width;
+        float oldz = 0f;
+        for (int i = 0; i < slices; i += 1) {
+            float x = (float)Math.cos(i * h_sector) * width;
+            float z = (float)Math.sin(i * h_sector) * depth;
+            xzs[i*2] = x;
+            xzs[i*2 + 1] = z;
+            float dw = (float)Math.sqrt((oldx - x)*(oldx - x) + (oldz - z)*(oldz - z));
+            dws[i] = dw;
+            realw += dw;
+            oldx = x;
+            oldz = z;
+        }
+        for (int i = 0; i < stacks; i += 1) {
+            float t = .5f * (ys[i] + height) / height;
+            float old_s = 1f;
             for (int j = 0; j < slices; j += 1) {
-                float x = (float)Math.cos(j * h_sector) * width;
-                float z = (float)Math.sin(j * h_sector) * depth;
-                mCubeVertices.put(new float[]{x, y, z});
-                mCubeNormals.put(new float[]{-x, -y, -z});
+                mCubeVertices.put(xzs[j*2]);
+                mCubeVertices.put(ys[i]);
+                mCubeVertices.put(xzs[j*2 + 1]);
+                mCubeNormals.put(-xzs[j*2]);
+                mCubeNormals.put(-ys[i]);
+                mCubeNormals.put(-xzs[j*2 + 1]);
                 mCubeColors.put(new float[]{0f, 0.5273f, 0.2656f, 1.0f});
-                mCubeTextures.put(new float[]{  })
-	    }
+                float s = old_s - (dws[j]/realw);
+                mCubeTextures.put(s);
+                mCubeTextures.put(t);
+                old_s = s;
+            }
             if (i < stacks - 1) {
                 if (i > 0) {
                     // Degenerate begin: repeat first vertex
@@ -324,8 +354,32 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
                 }
             }
         }
+        // for (int i = 0; i < stacks; i += 1) {
+        //     float y = (float)Math.cos(i * v_sector) * height;
+        //     float t = .5f * (y + height) / height;
+        //     float oldx = width;
+        //     float oldz = 0f;
+        //     float olds = 1f;
+        //     float realw = 0f;
+        //     for (int j = 0; j < slices; j += 1) {
+        //         float x = (float)Math.cos(j * h_sector) * width;
+        //         float z = (float)Math.sin(j * h_sector) * depth;
+        //         mCubeVertices.put(new float[]{x, y, z});
+        //         mCubeNormals.put(new float[]{-x, -y, -z});
+        //         mCubeColors.put(new float[]{0f, 0.5273f, 0.2656f, 1.0f});
+        //         float dw = Math.sqrt((oldx - x)*(oldx - x) + (oldz - z)*(oldz - z));
+        //         realw += dw;
+        //         mCubeTextures.put(new float[]{s, t});
+	//     }
+// I/viredroid(13454): !!!c 30.000000 21.000000 0.000000
+// I/viredroid(13454): !!!c -0.000001 21.000000 0.000000
+// I/viredroid(13454): !!!c -30.000000 21.000000 0.000000
+// I/viredroid(13454): !!!c 30.000000 -21.000000 0.000000
+// I/viredroid(13454): !!!c -0.000001 -21.000000 0.000000
+// I/viredroid(13454): !!!c -30.000000 -21.000000 0.000000
+// I/viredroid(13454): !!!i 0 3 1 4 2 5 
+
         cubeIndicesSize = mCubeIndices.position();
-	StringBuilder tst = new StringBuilder().append("!!!i ");
         mCubeIndices.position(0);
         mCubeVertices.position(0);
         mCubeNormals.position(0);
@@ -477,7 +531,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glLinkProgram(mCubeProgram);
         GLES20.glUseProgram(mCubeProgram);
 
-        mTextureDataHandle = loadTexture(R.drawable.bumpy_bricks_public_domain);
+//        mTextureDataHandle = loadTexture(R.drawable.bumpy_bricks_public_domain);
         checkGLError("Cube program");
 
         mCubePositionParam = GLES20.glGetAttribLocation(mCubeProgram, "a_Position");
