@@ -124,7 +124,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float[] mModelFloor;
 
     private int mScore = 0;
-    private float mObjectDistance = 20f;
+    private float mObjectDistance = 10f;
     private float mFloorDepth = 20f;
 
     private Vibrator mVibrator;
@@ -278,8 +278,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private void fillCubeCoords() {
         int stacks = 50;
         int slices = 50;
-        float width = 10.0f;
-        float height = 7.0f;
+        float width = 16.0f;
+        float height = 9.0f;
         float depth = -5.0f;
 
         mCubeVertices = ByteBuffer.allocateDirect(
@@ -323,7 +323,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             oldz = z;
         }
         for (int i = 0; i < stacks; i += 1) {
-            float t = .5f * (ys[i] + height) / height;
+            float t = 1 - .5f * (ys[i] + height) / height;
             float old_s = 1f;
             for (int j = 0; j < slices; j += 1) {
                 mCubeVertices.put(xzs[j*2]);
@@ -384,6 +384,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         mCubeVertices.position(0);
         mCubeNormals.position(0);
         mCubeColors.position(0);
+        mCubeTextures.position(0);
     }   
 
     private void _fillCubeCoords() {
@@ -531,7 +532,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glLinkProgram(mCubeProgram);
         GLES20.glUseProgram(mCubeProgram);
 
-//        mTextureDataHandle = loadTexture(R.drawable.bumpy_bricks_public_domain);
+        mTextureDataHandle = loadTexture(R.drawable.test);
         checkGLError("Cube program");
 
         mCubePositionParam = GLES20.glGetAttribLocation(mCubeProgram, "a_Position");
@@ -696,6 +697,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glVertexAttribPointer(mCubeTexParam, COORDS_PER_TEXTURE
                                      , GLES20.GL_FLOAT, false, 0, mCubeTextures);
 
+        GLES20.glEnableVertexAttribArray(mCubeTexParam);
 
         GLES20.glUniform3fv(mCubeLightPosParam, 1, mLightPosInEyeSpace, 0);
 
