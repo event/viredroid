@@ -227,6 +227,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         mOverlayView = (ViredroidOverlayView) findViewById(R.id.overlay);
         mOverlayView.show3DToast("Pull the magnet when you find an object.");
+        CardboardDeviceParams params = getCardboardView().getCardboardDeviceParams();
+        params.setInterLensDistance(.05f);
+        updateCardboardDeviceParams(params);
     }
 
     @Override
@@ -300,8 +303,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         float v_sector = (float)Math.PI / (stacks - 1);
         float h_sector = (float)Math.PI / (slices - 1);
-        // FIXME: coords have to be changed to array of x,z and array of y's
-        //         and combined to mCubeVertices
         float[] ys = new float[stacks];
         float[] xzs = new float[slices * 2];
         float[] dws = new float[slices];
