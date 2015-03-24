@@ -24,6 +24,26 @@ import java.net.Socket;
 
 public class ImageCmd implements Command {
     public void exec(InputStream s) {
-        int bytePP = s.
+        byte[512] buf;
+        s.read(buf, 0, 16);
+        int width = buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3];
+        int height = buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
+        int xOffset = buf[8] << 24 | buf[9] << 16 | buf[10] << 8 | buf[11];
+        int yOffset = buf[12] << 24 | buf[13] << 16 | buf[14] << 8 | buf[15];
+        int imageSize = 3 * width * height;
+        ByteBuffer imageBuf = ByteBuffer.allocateDirect(imageSize)
+            .order(ByteOrder.nativeOrder());
+        while (imageSize > 0) {
+            int cnt = Math.min(512, imageSize);
+            int read = s.read(buf, 0, cnt);
+            if (read < 0) {
+                throw new RuntimeException("Sudden end of stream!");
+            }
+            imageSize -= read;
+            imageBuf.put(buf, 0, read);
+        }
+        GLES20.glTexSubImage2D(targetId, 0, xOffset, yOffset
+                               , width, height, GLES20.GL_RGB
+                               , GLES20.GL_UNSIGNED_BYTE, imageBuf);
     }
 }

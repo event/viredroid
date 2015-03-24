@@ -53,6 +53,7 @@ public class DataPump implements Runnable {
 
     private static final String IPADDR = "192.168.100.132";
     private static final int PORT = 5003;
+
     private Map<Integer, Command>  commandMap;
     public DataPump(){
         commandMap = new HashMap<Integer, Command>();
