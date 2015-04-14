@@ -20,11 +20,22 @@
 
 package org.viredero.viredroid;
 
-import java.net.Socket;
+import android.opengl.GLES20;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 public class ImageCmd implements Command {
-    public void exec(InputStream s) {
-        byte[512] buf;
+    private int targetId;
+
+    public ImageCmd(int targetId) {
+        this.targetId = targetId;
+    }
+
+    public void exec(InputStream s) throws IOException {
+        byte[] buf = new byte[512];
         s.read(buf, 0, 16);
         int width = buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3];
         int height = buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
@@ -43,7 +54,7 @@ public class ImageCmd implements Command {
             imageBuf.put(buf, 0, read);
         }
         GLES20.glTexSubImage2D(targetId, 0, xOffset, yOffset
-                               , width, height, GLES20.GL_RGB
-                               , GLES20.GL_UNSIGNED_BYTE, imageBuf);
+                , width, height, GLES20.GL_RGB
+                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
     }
 }

@@ -34,7 +34,6 @@ import android.opengl.GLUtils;
 import android.os.Bundle;
 import android.os.Vibrator;
 import android.util.Log;
-import android.util.FloatMath;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
@@ -61,8 +60,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static final float CAMERA_Z = 0.01f;
 
     private static final int COORDS_PER_VERTEX = 3;
-    private static final int COORDS_PER_NORMAL = 3;
-    private static final int COORDS_PER_COLOR = 4;
     private static final int COORDS_PER_TEXTURE = 2;
     private static final int BYTES_PER_FLOAT = 4;
     private static final int BYTES_PER_SHORT = 2;
@@ -96,7 +93,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private final float[] lightPosInEyeSpace = new float[4];
 
     private FloatBuffer floorVertices;
-    private FloatBuffer floorColors;
     private FloatBuffer floorNormals;
 
     private FloatBuffer screenVertices;
@@ -410,6 +406,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
 
         checkGLError("onSurfaceCreated");
+
+        DataPump pump = new DataPump(textureDataHandle);
+
     }
 
     /**

@@ -20,8 +20,9 @@
 
 package org.viredero.viredroid;
 
-import java.net.Socket;
+import java.io.IOException;
+import java.io.InputStream;
 
 public interface Command {
-    void exec(Socket socket);
+    void exec(InputStream is) throws IOException;
 }

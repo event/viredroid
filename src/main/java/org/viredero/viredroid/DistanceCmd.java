@@ -20,10 +20,10 @@
 
 package org.viredero.viredroid;
 
-import java.net.Socket;
+import java.io.InputStream;
 
 public class DistanceCmd implements Command {
-    public void exec(Socket s) {
+    public void exec(InputStream s) {
         
     }
 }
