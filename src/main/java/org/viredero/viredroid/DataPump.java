@@ -30,11 +30,13 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.util.Log;
+
 public class DataPump implements Runnable {
 
     private static final String TAG = "viredroid";
 
-    private static final String IPADDR = "192.168.100.132";
+    private static final String IPADDR = "192.168.1.77";
     private static final int PORT = 5003;
 
     private Map<Integer, Command> commandMap;
@@ -55,11 +57,7 @@ public class DataPump implements Runnable {
             InputStream stream = s.getInputStream();
             while (true) {
                 int code = 0;
-                try {
-                    code = stream.read();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                code = stream.read();
                 Command cmd = commandMap.get(code);
                 if (cmd != null) {
                     cmd.exec(stream);
@@ -68,7 +66,7 @@ public class DataPump implements Runnable {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "io failure", e);
         }
 
     }

@@ -407,7 +407,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         checkGLError("onSurfaceCreated");
 
-        DataPump pump = new DataPump(textureDataHandle);
+        new Thread(new DataPump(textureDataHandle)).start();
 
     }
 
@@ -436,7 +436,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onNewFrame(HeadTransform headTransform) {
-        Log.i(TAG, "onNewFrame");
+
     }
 
     @Override
