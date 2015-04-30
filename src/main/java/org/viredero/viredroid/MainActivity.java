@@ -45,8 +45,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.microedition.khronos.egl.EGLConfig;
+
 /**
  * A Cardboard sample application.
  */
@@ -130,6 +133,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private Vibrator vibrator;
     private ViredroidOverlayView overlayView;
 
+    private BlockingQueue<ImageUpdate> imageQueue;
+    
     
     /**
      * Converts a raw text file, saved as a resource, into an OpenGL ES shader.
@@ -406,8 +411,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
 
         checkGLError("onSurfaceCreated");
-
-        new Thread(new DataPump(textureDataHandle)).start();
+        imageQueue = new ArrayBlockingQueue<ImageUpdate>(10);
+        new Thread(new DataPump(textureDataHandle, imageQueue)).start();
 
     }
 
@@ -475,7 +480,15 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureDataHandle);
         GLES20.glUniform1i(screenTexUnihandle, 0);
- 
+        ImageUpdate iu = imageQueue.poll();
+        while (iu != null) {
+            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0
+                                   , iu.getXOffset(), iu.getYOffset()
+                                   , iu.getWidth(), iu.getHeight(), GLES20.GL_RGBA
+                                   , GLES20.GL_UNSIGNED_BYTE, iu.getBytes());
+            iu = imageQueue.poll();
+        }
+        
         GLES20.glVertexAttribPointer(
             screenPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT
             , false, 0, screenVertices);

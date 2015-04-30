@@ -25,28 +25,35 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.DataInputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.BlockingQueue;
 
 public class ImageCmd implements Command {
     private static final String TAG = "viredroid";
     private static final int BYT_PER_PIX = 4;
 
     private int targetId;
-
-    public ImageCmd(int targetId) {
+    private BlockingQueue<ImageUpdate> queue;
+    
+    public ImageCmd(int targetId, BlockingQueue<ImageUpdate> queue) {
         this.targetId = targetId;
+        this.queue = queue;
     }
 
     public void exec(InputStream s) throws IOException {
         byte[] buf = new byte[512];
-        s.read(buf, 0, 16);
-        int width = buf[0] << 24 | buf[1] << 16 | buf[2] << 8 | buf[3];
-        int height = buf[4] << 24 | buf[5] << 16 | buf[6] << 8 | buf[7];
-        int xOffset = buf[8] << 24 | buf[9] << 16 | buf[10] << 8 | buf[11];
-        int yOffset = buf[12] << 24 | buf[13] << 16 | buf[14] << 8 | buf[15];
+        DataInputStream dis = new DataInputStream(s);
+        int width = dis.readInt();
+        int height = dis.readInt();
+        int xOffset = dis.readInt();
+        int yOffset = dis.readInt();
         int imageSize = 4 * width * height;
-        Log.i(TAG, String.format("%d/%d/%d/%d/%d", width, height, xOffset, yOffset, imageSize));
+        //        Log.i(TAG, String.format("%d/%d/%d/%d/%d", width, height, xOffset, yOffset, imageSize));
+        if (imageSize <= 0) {
+            throw new RuntimeException("image size < 0");
+        }
         ByteBuffer imageBuf = ByteBuffer.allocateDirect(imageSize)
             .order(ByteOrder.nativeOrder());
         while (imageSize > 0) {
@@ -58,8 +65,7 @@ public class ImageCmd implements Command {
             imageSize -= read;
             imageBuf.put(buf, 0, read);
         }
-        GLES20.glTexSubImage2D(targetId, 0, xOffset, yOffset
-                , width, height, GLES20.GL_RGBA
-                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
+        imageBuf.position(0);
+        queue.offer(new ImageUpdate(width, height, xOffset, yOffset, imageBuf));
     }
 }

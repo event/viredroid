@@ -29,6 +29,7 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
 
 import android.util.Log;
 
@@ -40,10 +41,10 @@ public class DataPump implements Runnable {
     private static final int PORT = 5003;
 
     private Map<Integer, Command> commandMap;
-    public DataPump(int targetId){
+    public DataPump(int targetId, BlockingQueue<ImageUpdate> queue){
         commandMap = new HashMap<Integer, Command>();
         commandMap.put(1, new InitCmd());
-        commandMap.put(2, new ImageCmd(targetId));
+        commandMap.put(2, new ImageCmd(targetId, queue));
         commandMap.put(3, new DistanceCmd());
         commandMap.put(4, new MouseCmd());
     }
@@ -62,7 +63,7 @@ public class DataPump implements Runnable {
                 if (cmd != null) {
                     cmd.exec(stream);
                 } else {
-                    Log.e(TAG, "Received unknown command " + code);
+                    throw new RuntimeException("Received unknown command " + code);
                 }
             }
         } catch (IOException e) {
