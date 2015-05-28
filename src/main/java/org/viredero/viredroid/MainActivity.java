@@ -33,9 +33,12 @@ import android.opengl.Matrix;
 import android.opengl.GLUtils;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.hardware.usb.UsbManager;
+import android.hardware.usb.UsbAccessory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -412,7 +415,18 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         checkGLError("onSurfaceCreated");
         imageQueue = new ArrayBlockingQueue<ImageUpdate>(10);
-        new Thread(new DataPump(textureDataHandle, imageQueue)).start();
+        UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
+        UsbAccessory accessory = (UsbAccessory) getIntent()
+            .getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+
+        ParcelFileDescriptor fd = manager.openAccessory(accessory);
+        Runnable r;
+        if (fd != null) {
+            r = new UsbDataPump(textureDataHandle, imageQueue, fd);
+        } else {
+            r = new DataPump(textureDataHandle, imageQueue);
+        }
+        new Thread(r).start();
 
     }
 

@@ -8,6 +8,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-sdk android:minSdkVersion="16" android:targetSdkVersion="19"/>
+    <uses-feature android:name="android.hardware.usb.accessory" />
     <uses-feature android:glEsVersion="0x00020000" android:required="true" />
     <uses-permission android:name="android.permission.INTERNET" />
     <application
@@ -25,6 +26,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
                 <category android:name="com.google.intent.category.CARDBOARD" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+            </intent-filter>
+            <meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+                       android:resource="@xml/accessory_filter" />
         </activity>
     </application>
 
