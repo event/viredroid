@@ -419,6 +419,17 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         UsbAccessory accessory = (UsbAccessory) getIntent()
             .getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
 
+        if (accessory == null) {
+            UsbAccessory[] accessories = manager.getAccessoryList();
+            int i = accessories.length;
+            while (i > 0 && accessory == null) {
+                i -= 1;
+                //TODO: should be changed to url so other implementations are covered
+                if ("x-viredero".equals(accessories[i].getModel())) {
+                    accessory = accessories[i];
+                }
+            }
+        }
         ParcelFileDescriptor fd = manager.openAccessory(accessory);
         Runnable r;
         if (fd != null) {
@@ -427,7 +438,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             r = new DataPump(textureDataHandle, imageQueue);
         }
         new Thread(r).start();
-
     }
 
     /**
@@ -541,13 +551,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         checkGLError("drawing floor");
     }
 
-    /**
-     * Called when the Cardboard trigger is pulled.
-     */
     @Override
     public void onCardboardTrigger() {
         Log.i(TAG, "onCardboardTrigger");
         // Always give user feedback.
         vibrator.vibrate(50);
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        finish();
     }
 }
