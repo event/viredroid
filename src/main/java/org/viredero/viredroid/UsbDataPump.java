@@ -27,6 +27,7 @@ import java.lang.Runnable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
+import java.io.BufferedInputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ public class UsbDataPump implements Runnable {
 
     private static final String TAG = "viredroid";
     private InputStream stream;
+    private ParcelFileDescriptor fd;
     private Map<Integer, Command> commandMap;
     public UsbDataPump(int targetId, BlockingQueue<ImageUpdate> queue, ParcelFileDescriptor fd){
         commandMap = new HashMap<Integer, Command>();
@@ -44,7 +46,9 @@ public class UsbDataPump implements Runnable {
         commandMap.put(2, new ImageCmd(targetId, queue));
         commandMap.put(3, new DistanceCmd());
         commandMap.put(4, new MouseCmd());
-        stream = new FileInputStream(fd.getFileDescriptor());
+        this.fd = fd;
+        stream = new FixedReadBufferedInputStream(new FileInputStream(fd.getFileDescriptor())
+                                                  , 16384);
     }
 
     public void run() {
