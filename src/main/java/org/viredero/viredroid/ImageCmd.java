@@ -43,27 +43,27 @@ public class ImageCmd implements Command {
     }
 
     public void exec(InputStream s) throws IOException {
-        byte[] buf = new byte[512];
         DataInputStream dis = new DataInputStream(s);
         int width = dis.readInt();
         int height = dis.readInt();
         int xOffset = dis.readInt();
         int yOffset = dis.readInt();
         int imageSize = 4 * width * height;
-        //        Log.i(TAG, String.format("%d/%d/%d/%d/%d", width, height, xOffset, yOffset, imageSize));
+        Log.i(TAG, String.format("%d/%d/%d/%d/%d", width, height, xOffset, yOffset, imageSize));
         if (imageSize <= 0) {
             throw new RuntimeException("image size < 0");
         }
         ByteBuffer imageBuf = ByteBuffer.allocateDirect(imageSize)
             .order(ByteOrder.nativeOrder());
+        byte[] buf = imageBuf.array();
+        int totalRead = 0;
         while (imageSize > 0) {
-            int cnt = Math.min(512, imageSize);
-            int read = s.read(buf, 0, cnt);
+            int read = s.read(buf, totalRead, imageSize);
             if (read < 0) {
                 throw new RuntimeException("Sudden end of stream!");
             }
             imageSize -= read;
-            imageBuf.put(buf, 0, read);
+            totalRead += read;
         }
         imageBuf.position(0);
         queue.offer(new ImageUpdate(width, height, xOffset, yOffset, imageBuf));
