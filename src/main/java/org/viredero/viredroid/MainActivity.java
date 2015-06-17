@@ -207,9 +207,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         overlayView = (ViredroidOverlayView) findViewById(R.id.overlay);
         overlayView.show3DToast("Here is your desktop @<ipaddress>");
-        CardboardDeviceParams params = getCardboardView().getCardboardDeviceParams();
-        params.setInterLensDistance(.05f);
-        updateCardboardDeviceParams(params);
+        // CardboardDeviceParams params = getCardboardView().getCardboardDeviceParams();
+        // params.setInterLensDistance(.05f);
+        // updateCardboardDeviceParams(params);
     }
 
     @Override

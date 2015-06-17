@@ -49,7 +49,6 @@ public class ImageCmd implements Command {
         int xOffset = dis.readInt();
         int yOffset = dis.readInt();
         int imageSize = 4 * width * height;
-        Log.i(TAG, String.format("%d/%d/%d/%d/%d", width, height, xOffset, yOffset, imageSize));
         if (imageSize <= 0) {
             throw new RuntimeException("image size < 0");
         }
