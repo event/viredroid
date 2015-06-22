@@ -48,7 +48,7 @@ public class ImageCmd implements Command {
         int height = dis.readInt();
         int xOffset = dis.readInt();
         int yOffset = dis.readInt();
-        int imageSize = 4 * width * height;
+        int imageSize = 3 * width * height;
         if (imageSize <= 0) {
             throw new RuntimeException("image size < 0");
         }

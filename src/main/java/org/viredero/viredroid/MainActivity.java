@@ -29,6 +29,7 @@ import com.google.vrtoolkit.cardboard.Viewport;
 
 import android.content.Context;
 import android.opengl.GLES20;
+import android.opengl.GLU;
 import android.opengl.Matrix;
 import android.opengl.GLUtils;
 import android.os.Bundle;
@@ -48,6 +49,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
+import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -178,8 +180,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static void checkGLError(String label) {
         int error;
         while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-            Log.e(TAG, label + ": glError " + error);
-            throw new RuntimeException(label + ": glError " + error);
+            Log.e(TAG, label + ": glError " + error + " " + GLU.gluErrorString(error));
+            throw new RuntimeException(label + ": glError " + error+ " " + GLU.gluErrorString(error));
         }
     }
 
@@ -228,6 +230,36 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glGenTextures(1, textureHandle, 0);
  
         if (textureHandle[0] != 0) {
+            // Bind to the texture in OpenGL
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
+ 
+            // Set filtering
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+ 
+            ByteBuffer imageBuf = ByteBuffer.allocateDirect(3*1280*800)
+                .order(ByteOrder.nativeOrder());
+            byte[] bufArr = imageBuf.array();
+            Arrays.fill(bufArr, (byte)0);
+            imageBuf.position(0);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB
+                                , 1280, 800, 0, GLES20.GL_RGB
+                                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
+        } else {
+            throw new RuntimeException("Error loading texture.");
+        }
+ 
+        return textureHandle[0];
+    }
+
+    private int _loadTexture(final int resourceId) {
+        final int[] textureHandle = new int[1];
+ 
+        GLES20.glGenTextures(1, textureHandle, 0);
+ 
+        if (textureHandle[0] != 0) {
             final BitmapFactory.Options options = new BitmapFactory.Options();
             options.inScaled = false;   // No pre-scaling
  
@@ -244,9 +276,11 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
                                    , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
  
-            // Load the bitmap into the bound texture.
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0);
- 
+            // Load t\he bitmap into the bound texture.
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0
+                               , bitmap, 0);
+            Log.i(TAG, "fmt " + GLUtils.getInternalFormat(bitmap)
+                  + " type " + GLUtils.getType(bitmap));
             // Recycle the bitmap, since its data has been loaded into OpenGL.
             bitmap.recycle();
         } else {
@@ -508,7 +542,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         while (iu != null) {
             GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0
                                    , iu.getXOffset(), iu.getYOffset()
-                                   , iu.getWidth(), iu.getHeight(), GLES20.GL_RGBA
+                                   , iu.getWidth(), iu.getHeight(), GLES20.GL_RGB
                                    , GLES20.GL_UNSIGNED_BYTE, iu.getBytes());
             iu = imageQueue.poll();
         }
