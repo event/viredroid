@@ -115,8 +115,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private int screenTexParam;
     private int screenModelViewProjectionParam;
     private int screenTexUnihandle;
+    private int pointTexUnihandle;
  
-    private int textureDataHandle;
+    private int screenTexDataHandle;
+    private int pointerTexDataHandle;
 
     private int floorPositionParam;
     private int floorNormalParam;
@@ -138,7 +140,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private Vibrator vibrator;
     private ViredroidOverlayView overlayView;
 
-    private BlockingQueue<ImageUpdate> imageQueue;
+    private BlockingQueue<Update> imageQueue;
     
     
     /**
@@ -224,7 +226,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Log.i(TAG, "onSurfaceChanged");
     }
 
-    private int loadTexture(final int resourceId) {
+    private int loadScreenTexture() {
         final int[] textureHandle = new int[1];
  
         GLES20.glGenTextures(1, textureHandle, 0);
@@ -242,7 +244,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             ByteBuffer imageBuf = ByteBuffer.allocateDirect(3*1280*800)
                 .order(ByteOrder.nativeOrder());
             byte[] bufArr = imageBuf.array();
-            Arrays.fill(bufArr, (byte)0);
+            Arrays.fill(bufArr, (byte)10);
             imageBuf.position(0);
             GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB
                                 , 1280, 800, 0, GLES20.GL_RGB
@@ -254,7 +256,37 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         return textureHandle[0];
     }
 
-    private int _loadTexture(final int resourceId) {
+    private int loadPointerTexture() {
+        final int[] textureHandle = new int[1];
+ 
+        GLES20.glGenTextures(1, textureHandle, 1);
+ 
+        if (textureHandle[0] != 0) {
+            // Bind to the texture in OpenGL
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
+ 
+            // Set filtering
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
+                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
+ 
+            ByteBuffer imageBuf = ByteBuffer.allocateDirect(4*1280*800)
+                .order(ByteOrder.nativeOrder());
+            byte[] bufArr = imageBuf.array();
+            Arrays.fill(bufArr, (byte)0);
+            imageBuf.position(0);
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA
+                                , 1280, 800, 0, GLES20.GL_RGBA
+                                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
+        } else {
+            throw new RuntimeException("Error loading texture.");
+        }
+ 
+        return textureHandle[0];
+    }
+
+    private int _loadScreenTexture(final int resourceId) {
         final int[] textureHandle = new int[1];
  
         GLES20.glGenTextures(1, textureHandle, 0);
@@ -401,14 +433,16 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glLinkProgram(screenProgram);
         GLES20.glUseProgram(screenProgram);
 
-        textureDataHandle = loadTexture(R.drawable.test);
+        screenTexDataHandle = loadScreenTexture();
+        pointerTexDataHandle = loadPointerTexture();
         checkGLError("Screen program");
 
         screenPositionParam = GLES20.glGetAttribLocation(screenProgram, "a_Position");
         screenTexParam = GLES20.glGetAttribLocation(screenProgram, "a_TexCoord");
 
         screenModelViewProjectionParam = GLES20.glGetUniformLocation(screenProgram, "u_MVP");
-        screenTexUnihandle = GLES20.glGetUniformLocation(screenProgram, "u_Texture");
+        screenTexUnihandle = GLES20.glGetUniformLocation(screenProgram, "u_TexScreen");
+        pointTexUnihandle = GLES20.glGetUniformLocation(screenProgram, "u_TexPointer");
 
         GLES20.glEnableVertexAttribArray(screenPositionParam);
         GLES20.glEnableVertexAttribArray(screenTexParam);
@@ -448,7 +482,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
 
         checkGLError("onSurfaceCreated");
-        imageQueue = new ArrayBlockingQueue<ImageUpdate>(10);
+        imageQueue = new ArrayBlockingQueue<Update>(10);
         UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
         UsbAccessory accessory = (UsbAccessory) getIntent()
             .getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
@@ -467,9 +501,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         ParcelFileDescriptor fd = manager.openAccessory(accessory);
         Runnable r;
         if (fd != null) {
-            r = new UsbDataPump(textureDataHandle, imageQueue, fd);
+            r = new UsbCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle, fd);
         } else {
-            r = new DataPump(textureDataHandle, imageQueue);
+            r = new NetCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle
+                               , "192.168.1.77", 5003);
         }
         new Thread(r).start();
     }
@@ -536,15 +571,15 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glUseProgram(screenProgram);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureDataHandle);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, screenTexDataHandle);
         GLES20.glUniform1i(screenTexUnihandle, 0);
-        ImageUpdate iu = imageQueue.poll();
-        while (iu != null) {
-            GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0
-                                   , iu.getXOffset(), iu.getYOffset()
-                                   , iu.getWidth(), iu.getHeight(), GLES20.GL_RGB
-                                   , GLES20.GL_UNSIGNED_BYTE, iu.getBytes());
-            iu = imageQueue.poll();
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1);
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pointerTexDataHandle);
+        GLES20.glUniform1i(pointTexUnihandle, 1);
+        Update update = imageQueue.poll();
+        while (update != null) {
+            update.draw();
+            update = imageQueue.poll();
         }
         
         GLES20.glVertexAttribPointer(
