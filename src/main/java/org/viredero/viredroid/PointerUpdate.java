@@ -23,29 +23,34 @@ package org.viredero.viredroid;
 import java.nio.ByteBuffer;
 import android.opengl.GLES20;
 
-public class ImageUpdate implements Update {
+public class PointerUpdate implements Update {
     private final int texId;
+    private final int x;
+    private final int y;
+    private final int oldX;
+    private final int oldY;
     private final int width;
     private final int height;
-    private final int xOffset;
-    private final int yOffset;
-    private final ByteBuffer bytes;
 
-    public ImageUpdate(int texId, int width, int height, int xOffset
-                       , int yOffset, ByteBuffer bytes) {
+    public PointerUpdate(int texId, int x, int y, int oldX, int oldY
+                         , int width, int height) {
         this.texId = texId;
+        this.x = x;
+        this.y = y;
+        this.oldX = oldX;
+        this.oldY = oldY;
         this.width = width;
         this.height = height;
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.bytes = bytes;
     }
 
     @Override
     public void draw() {
+        int xOffset = x - width/2;
+        int yOffset = y - height/2;
+        int oldXOffset = oldX - width/2;
+        int oldYOffset = oldY - height/2;
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId);
-        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, xOffset
-                               , yOffset, width, height, GLES20.GL_RGB
-                               , GLES20.GL_UNSIGNED_BYTE, bytes);
+        GLES20.glCopyTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, xOffset, yOffset
+                                   , oldXOffset, oldYOffset, width, height);
     }
 }

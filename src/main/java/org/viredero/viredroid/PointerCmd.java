@@ -21,9 +21,33 @@
 package org.viredero.viredroid;
 
 import java.io.InputStream;
+import java.io.DataInputStream;
+import java.io.IOException;
 
-public class MouseCmd implements Command {
-    public void exec(InputStream s) {
-        
+public class PointerCmd implements Command {
+    private static final String TAG = "viredroid";
+
+    private int pointerTexDataHandle;
+    private DataInputStream dis;
+    private static int oldX = 0;
+    private static int oldY = 0;
+    private final int width;
+    private final int height;
+    
+    public PointerCmd(InputStream s, int pointerTexDataHandle, int width, int height) {
+        this.pointerTexDataHandle = pointerTexDataHandle;
+        this.dis = new DataInputStream(s);
+        this.width = width;
+        this.height = height;
+    }
+
+    @Override
+    public Update exec() throws IOException {
+        int x = dis.readInt();
+        int y = dis.readInt();
+        Update u = new PointerUpdate(pointerTexDataHandle, x, y, oldX, oldY, width, height);
+        oldX = x;
+        oldY = y;
+        return u;
     }
 }

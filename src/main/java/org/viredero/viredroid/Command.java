@@ -21,8 +21,7 @@
 package org.viredero.viredroid;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 public interface Command {
-    void exec(InputStream is) throws IOException;
+    Update exec() throws IOException;
 }

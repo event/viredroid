@@ -11,7 +11,7 @@
  * viredero is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public
  * License along with viredero; if not, write to the Free Software
@@ -23,11 +23,11 @@ package org.viredero.viredroid;
 import java.io.InputStream;
 import java.io.IOException;
 
-public class DistanceCmd implements Command {
+public class InitReplyCmd implements Command {
 
     private InputStream is;
     
-    public DistanceCmd(InputStream is) {
+    public InitReplyCmd(InputStream is) {
         this.is = is;
     }
 

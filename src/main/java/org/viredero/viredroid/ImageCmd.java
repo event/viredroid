@@ -28,22 +28,20 @@ import java.io.InputStream;
 import java.io.DataInputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.BlockingQueue;
 
 public class ImageCmd implements Command {
     private static final String TAG = "viredroid";
-    private static final int BYT_PER_PIX = 4;
 
-    private int targetId;
-    private BlockingQueue<ImageUpdate> queue;
+    private int screenTexDataHandle;
+    private DataInputStream dis;
     
-    public ImageCmd(int targetId, BlockingQueue<ImageUpdate> queue) {
-        this.targetId = targetId;
-        this.queue = queue;
+    public ImageCmd(InputStream s, int screenTexDataHandle) {
+        this.screenTexDataHandle = screenTexDataHandle;
+        this.dis = new DataInputStream(s);
     }
-
-    public void exec(InputStream s) throws IOException {
-        DataInputStream dis = new DataInputStream(s);
+    
+    @Override
+    public Update exec() throws IOException {
         int width = dis.readInt();
         int height = dis.readInt();
         int xOffset = dis.readInt();
@@ -57,7 +55,7 @@ public class ImageCmd implements Command {
         byte[] buf = imageBuf.array();
         int totalRead = 0;
         while (imageSize > 0) {
-            int read = s.read(buf, totalRead, imageSize);
+            int read = dis.read(buf, totalRead, imageSize);
             if (read < 0) {
                 throw new RuntimeException("Sudden end of stream!");
             }
@@ -65,6 +63,7 @@ public class ImageCmd implements Command {
             totalRead += read;
         }
         imageBuf.position(0);
-        queue.offer(new ImageUpdate(width, height, xOffset, yOffset, imageBuf));
+        return new ImageUpdate(screenTexDataHandle, width, height
+                               , xOffset, yOffset, imageBuf);
     }
 }

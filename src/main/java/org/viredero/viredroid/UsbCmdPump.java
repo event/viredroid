@@ -34,38 +34,20 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 
-public class UsbDataPump implements Runnable {
+public class UsbCmdPump extends AbstractCmdPump {
 
     private static final String TAG = "viredroid";
-    private InputStream stream;
     private ParcelFileDescriptor fd;
-    private Map<Integer, Command> commandMap;
-    public UsbDataPump(int targetId, BlockingQueue<ImageUpdate> queue, ParcelFileDescriptor fd){
-        commandMap = new HashMap<Integer, Command>();
-        commandMap.put(1, new InitCmd());
-        commandMap.put(2, new ImageCmd(targetId, queue));
-        commandMap.put(3, new DistanceCmd());
-        commandMap.put(4, new MouseCmd());
+    public UsbCmdPump(BlockingQueue<Update> queue, int screenTexDataHandle
+                      , int pointTexDataHandle, ParcelFileDescriptor fd){
+        super(queue, screenTexDataHandle, pointTexDataHandle);
         this.fd = fd;
-        stream = new FixedReadBufferedInputStream(new FileInputStream(fd.getFileDescriptor())
-                                                  , 16384);
     }
 
-    public void run() {
-        try {
-            while (true) {
-                int code = 0;
-                code = stream.read();
-                Command cmd = commandMap.get(code);
-                if (cmd != null) {
-                    cmd.exec(stream);
-                } else {
-                    throw new RuntimeException("Received unknown command " + code);
-                }
-            }
-        } catch (IOException e) {
-            Log.e(TAG, "io failure", e);
-        }
-
+    @Override
+    public InputStream createIS() throws IOException {
+        return new FixedReadBufferedInputStream(
+            new FileInputStream(fd.getFileDescriptor()), 16384);
     }
+    
 }
