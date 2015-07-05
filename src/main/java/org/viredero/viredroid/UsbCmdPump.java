@@ -26,7 +26,9 @@ import android.os.ParcelFileDescriptor;
 import java.lang.Runnable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -48,6 +50,11 @@ public class UsbCmdPump extends AbstractCmdPump {
     public InputStream createIS() throws IOException {
         return new FixedReadBufferedInputStream(
             new FileInputStream(fd.getFileDescriptor()), 16384);
+    }
+
+    @Override
+    public OutputStream createOS() throws IOException {
+        return new FileOutputStream(fd.getFileDescriptor());
     }
     
 }

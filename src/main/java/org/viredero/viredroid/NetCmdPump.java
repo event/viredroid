@@ -26,6 +26,7 @@ import java.lang.Runnable;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.util.concurrent.BlockingQueue;
@@ -37,6 +38,7 @@ public class NetCmdPump extends AbstractCmdPump {
 
     private final InetAddress addr;
     private final int port;
+    private Socket s;
 
     public NetCmdPump(BlockingQueue<Update> queue, int screenTexDataHandle
                       , int pointTexDataHandle, String addr, int port){
@@ -51,7 +53,17 @@ public class NetCmdPump extends AbstractCmdPump {
 
     @Override
     public InputStream createIS() throws IOException {
-        Socket s = new Socket(addr, port);
+        if (s != null) {
+            s = new Socket(addr, port);
+        }
         return s.getInputStream();
+    }
+
+    @Override
+    public OutputStream createOS() throws IOException {
+        if (s != null) {
+            s = new Socket(addr, port);
+        }
+        return s.getOutputStream();
     }
 }

@@ -259,7 +259,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private int loadPointerTexture() {
         final int[] textureHandle = new int[1];
  
-        GLES20.glGenTextures(1, textureHandle, 1);
+        GLES20.glGenTextures(1, textureHandle, 0);
  
         if (textureHandle[0] != 0) {
             // Bind to the texture in OpenGL
@@ -279,42 +279,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA
                                 , 1280, 800, 0, GLES20.GL_RGBA
                                 , GLES20.GL_UNSIGNED_BYTE, imageBuf);
-        } else {
-            throw new RuntimeException("Error loading texture.");
-        }
- 
-        return textureHandle[0];
-    }
-
-    private int _loadScreenTexture(final int resourceId) {
-        final int[] textureHandle = new int[1];
- 
-        GLES20.glGenTextures(1, textureHandle, 0);
- 
-        if (textureHandle[0] != 0) {
-            final BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inScaled = false;   // No pre-scaling
- 
-            // Read in the resource
-            final Bitmap bitmap = BitmapFactory.decodeResource(
-                getResources(), resourceId, options);
- 
-            // Bind to the texture in OpenGL
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
- 
-            // Set filtering
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
- 
-            // Load t\he bitmap into the bound texture.
-            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0
-                               , bitmap, 0);
-            Log.i(TAG, "fmt " + GLUtils.getInternalFormat(bitmap)
-                  + " type " + GLUtils.getType(bitmap));
-            // Recycle the bitmap, since its data has been loaded into OpenGL.
-            bitmap.recycle();
         } else {
             throw new RuntimeException("Error loading texture.");
         }
@@ -504,7 +468,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             r = new UsbCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle, fd);
         } else {
             r = new NetCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle
-                               , "192.168.1.77", 5003);
+                               , "192.168.1.77", 1242);
         }
         new Thread(r).start();
     }

@@ -26,6 +26,7 @@ import android.os.ParcelFileDescriptor;
 import java.lang.Runnable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.FileInputStream;
 import java.io.BufferedInputStream;
 import java.util.ArrayList;
@@ -35,6 +36,11 @@ import java.util.concurrent.BlockingQueue;
 public abstract class AbstractCmdPump implements Runnable {
 
     private static final String TAG = "viredroid";
+
+    private static final int VIREDERO_PROTO_VERSION = 1;
+    private static final int SCREEN_FMT_RGB = 1;
+    private static final int POINTER_FMT_RGBA = 1; 
+
     private List<Command> commands;
     private BlockingQueue<Update> queue;
     private InputStream is;
@@ -48,12 +54,11 @@ public abstract class AbstractCmdPump implements Runnable {
         this.pointTexDataHandle = pointTexDataHandle;
     }
 
-    private void initCommands() {
-        try {
-            this.is = createIS();
-        } catch (IOException ioe) {
-            throw new RuntimeException("Building stream failed", ioe);
-        }
+    public abstract InputStream createIS() throws IOException;
+    public abstract OutputStream createOS() throws IOException;
+
+    private void initCommands() throws IOException {
+        this.is = createIS();
         commands = new ArrayList<Command>(4);
         commands.add(new ErrorCmd()); // we send Init, not receive it
         commands.add(new InitReplyCmd(is));
@@ -63,24 +68,41 @@ public abstract class AbstractCmdPump implements Runnable {
     }
 
     @Override
-    public void run(){
-        initCommands();
+    public void run() {
         try {
-            while (true) {
-                int code = is.read();
-                if (code < 0 || code >= commands.size()) {
-                    throw new RuntimeException("Received unknown command " + code);
-                }
-                Command cmd = commands.get(code);
-                Update u = cmd.exec();
-                if (u != null) {
-                    queue.offer(u);
-                }
-            }
+            do_run();
         } catch (IOException ioe) {
             throw new RuntimeException("Error while pumping commands", ioe);
         }
     }
 
-    public abstract InputStream createIS() throws IOException;
+    private void do_run() throws IOException{
+        initPeer();
+        initCommands();
+        while (true) {
+            int code = is.read();
+            if (code < 0 || code >= commands.size()) {
+                throw new RuntimeException("Received unknown command " + code);
+            }
+            Command cmd = commands.get(code);
+            Update u = cmd.exec();
+            if (u != null) {
+                queue.offer(u);
+            }
+        }
+    }
+
+    private void initPeer() throws IOException {
+        OutputStream os = createOS();
+        if (os == null) {
+            Log.i(TAG, "Aborting peer initialization: output stream not created");
+            return;
+        }
+        os.write(0); //init cmd code
+        os.write(VIREDERO_PROTO_VERSION);
+        os.write(SCREEN_FMT_RGB);    // OR'ed screen image format constants
+        os.write(POINTER_FMT_RGBA);  // OR'ed pointer image format constants
+        os.flush();
+        os.close();
+    }
 }
