@@ -48,7 +48,7 @@ public class ImageCmd implements Command {
         int yOffset = dis.readInt();
         int imageSize = 3 * width * height;
         if (imageSize <= 0) {
-            throw new RuntimeException("image size < 0");
+            throw new RuntimeException("image size <= 0");
         }
         ByteBuffer imageBuf = ByteBuffer.allocateDirect(imageSize)
             .order(ByteOrder.nativeOrder());
@@ -63,7 +63,7 @@ public class ImageCmd implements Command {
             totalRead += read;
         }
         imageBuf.position(0);
-        return new ImageUpdate(screenTexDataHandle, width, height
-                               , xOffset, yOffset, imageBuf);
+        return new ScreenUpdate(screenTexDataHandle, width, height
+                                , xOffset, yOffset, imageBuf);
     }
 }

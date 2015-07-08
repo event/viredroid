@@ -23,29 +23,11 @@ package org.viredero.viredroid;
 import java.nio.ByteBuffer;
 import android.opengl.GLES20;
 
-public class ImageUpdate implements Update {
-    private final int texId;
-    private final int width;
-    private final int height;
-    private final int xOffset;
-    private final int yOffset;
-    private final ByteBuffer bytes;
+public class ScreenUpdate extends SubImageUpdate {
 
-    public ImageUpdate(int texId, int width, int height, int xOffset
-                       , int yOffset, ByteBuffer bytes) {
-        this.texId = texId;
-        this.width = width;
-        this.height = height;
-        this.xOffset = xOffset;
-        this.yOffset = yOffset;
-        this.bytes = bytes;
+    public ScreenUpdate(int texId, int width, int height, int xOffset
+                        , int yOffset, ByteBuffer bytes) {
+        super(texId, GLES20.GL_RGB, width, height, xOffset, yOffset, bytes);
     }
 
-    @Override
-    public void draw() {
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId);
-        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, xOffset
-                               , yOffset, width, height, GLES20.GL_RGB
-                               , GLES20.GL_UNSIGNED_BYTE, bytes);
-    }
 }

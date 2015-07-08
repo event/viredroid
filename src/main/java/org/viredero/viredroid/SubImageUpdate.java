@@ -23,10 +23,31 @@ package org.viredero.viredroid;
 import java.nio.ByteBuffer;
 import android.opengl.GLES20;
 
-public class PointerUpdate extends SubImageUpdate {
+public class SubImageUpdate implements Update {
+    private final int texId;
+    private final int format;
+    private final int width;
+    private final int height;
+    private final int xOffset;
+    private final int yOffset;
+    private final ByteBuffer bytes;
 
-    public PointerUpdate(int texId, int width, int height, int xOffset
-                         , int yOffset, ByteBuffer bytes) {
-        super(texId, GLES20.GL_RGBA, width, height, xOffset, yOffset, bytes);
+    public SubImageUpdate(int texId, int format, int width, int height
+                          , int xOffset, int yOffset, ByteBuffer bytes) {
+        this.texId = texId;
+        this.format = format;
+        this.width = width;
+        this.height = height;
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
+        this.bytes = bytes;
+    }
+
+    @Override
+    public void draw() {
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId);
+        GLES20.glTexSubImage2D(GLES20.GL_TEXTURE_2D, 0, xOffset
+                               , yOffset, width, height, format
+                               , GLES20.GL_UNSIGNED_BYTE, bytes);
     }
 }

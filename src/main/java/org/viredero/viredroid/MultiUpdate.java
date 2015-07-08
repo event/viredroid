@@ -20,13 +20,17 @@
 
 package org.viredero.viredroid;
 
-import java.nio.ByteBuffer;
-import android.opengl.GLES20;
+public class MultiUpdate implements Update {
+    private final Update updates[];
 
-public class PointerUpdate extends SubImageUpdate {
+    public MultiUpdate(Update ... updates) {
+        this.updates = updates;
+    }
 
-    public PointerUpdate(int texId, int width, int height, int xOffset
-                         , int yOffset, ByteBuffer bytes) {
-        super(texId, GLES20.GL_RGBA, width, height, xOffset, yOffset, bytes);
+    @Override
+    public void draw() {
+        for (Update u : updates) {
+            u.draw();
+        }
     }
 }
