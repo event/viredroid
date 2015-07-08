@@ -23,31 +23,81 @@ package org.viredero.viredroid;
 import java.io.InputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
+import android.util.Log;
 
 public class PointerCmd implements Command {
     private static final String TAG = "viredroid";
 
     private int pointerTexDataHandle;
     private DataInputStream dis;
-    private static int oldX = 0;
-    private static int oldY = 0;
-    private final int width;
-    private final int height;
+    private int x = 0;
+    private int y = 0;
+    private int width = 0;
+    private int height = 0;
+    private ByteBuffer eraseImageBytes;
+    private ByteBuffer pointerImageBytes;
     
-    public PointerCmd(InputStream s, int pointerTexDataHandle, int width, int height) {
+    public PointerCmd(InputStream s, int pointerTexDataHandle) {
         this.pointerTexDataHandle = pointerTexDataHandle;
         this.dis = new DataInputStream(s);
-        this.width = width;
-        this.height = height;
     }
 
     @Override
     public Update exec() throws IOException {
-        int x = dis.readInt();
-        int y = dis.readInt();
-        Update u = new PointerUpdate(pointerTexDataHandle, x, y, oldX, oldY, width, height);
-        oldX = x;
-        oldY = y;
+        Update u = null;
+        int newX = dis.readInt();
+        int newY = dis.readInt();
+        boolean hasCursor = dis.readBoolean();
+        if (hasCursor) {
+            int newWidth = dis.readInt();
+            int newHeight = dis.readInt();
+            int imageSize = 4 * newWidth * newHeight;
+            if (imageSize <= 0) {
+                throw new RuntimeException("image size <= 0");
+            }
+            pointerImageBytes = ByteBuffer.allocateDirect(imageSize)
+                .order(ByteOrder.nativeOrder());
+            byte[] buf = pointerImageBytes.array();
+            int totalRead = 0;
+            while (imageSize > 0) {
+                int read = dis.read(buf, totalRead, imageSize);
+                if (read < 0) {
+                    throw new RuntimeException("Sudden end of stream!");
+                }
+                imageSize -= read;
+                totalRead += read;
+            }
+            pointerImageBytes.position(0);
+            if (eraseImageBytes != null) {
+                eraseImageBytes.position(0);
+            }
+            
+            u = new MultiUpdate(
+                new PointerUpdate(pointerTexDataHandle, width, height
+                                  , x, y, eraseImageBytes)
+                , new PointerUpdate(pointerTexDataHandle, newWidth, newHeight
+                                    , newX, newY, pointerImageBytes));
+            if (width != newWidth || height != newHeight) {
+                eraseImageBytes = ByteBuffer.allocateDirect(imageSize)
+                    .order(ByteOrder.nativeOrder());
+                Arrays.fill(eraseImageBytes.array(), (byte)0);
+            }
+            width = newWidth;
+            height = newHeight;
+        } else if (width == 0) {
+            throw new RuntimeException("Cannot draw empty pointer");
+        } else if (x != newX || y != newY){
+            u = new MultiUpdate(
+                new PointerUpdate(pointerTexDataHandle, width, height
+                                  , x, y, eraseImageBytes)
+                , new PointerUpdate(pointerTexDataHandle, width, height
+                                    , newX, newY, pointerImageBytes));
+        }
+        x = newX;
+        y = newY;
         return u;
     }
 }
