@@ -51,12 +51,20 @@ public class PointerCmd implements Command {
         int newX = dis.readInt();
         int newY = dis.readInt();
         boolean hasCursor = dis.readBoolean();
+        if (eraseImageBytes != null) {
+            eraseImageBytes.position(0);
+        }
         if (hasCursor) {
             int newWidth = dis.readInt();
             int newHeight = dis.readInt();
             int imageSize = 4 * newWidth * newHeight;
             if (imageSize <= 0) {
                 throw new RuntimeException("image size <= 0");
+            }
+            if (width != newWidth || height != newHeight) {
+                eraseImageBytes = ByteBuffer.allocateDirect(imageSize)
+                    .order(ByteOrder.nativeOrder());
+                Arrays.fill(eraseImageBytes.array(), (byte)0);
             }
             pointerImageBytes = ByteBuffer.allocateDirect(imageSize)
                 .order(ByteOrder.nativeOrder());
@@ -71,20 +79,12 @@ public class PointerCmd implements Command {
                 totalRead += read;
             }
             pointerImageBytes.position(0);
-            if (eraseImageBytes != null) {
-                eraseImageBytes.position(0);
-            }
             
             u = new MultiUpdate(
                 new PointerUpdate(pointerTexDataHandle, width, height
                                   , x, y, eraseImageBytes)
                 , new PointerUpdate(pointerTexDataHandle, newWidth, newHeight
                                     , newX, newY, pointerImageBytes));
-            if (width != newWidth || height != newHeight) {
-                eraseImageBytes = ByteBuffer.allocateDirect(imageSize)
-                    .order(ByteOrder.nativeOrder());
-                Arrays.fill(eraseImageBytes.array(), (byte)0);
-            }
             width = newWidth;
             height = newHeight;
         } else if (width == 0) {
