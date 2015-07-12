@@ -211,9 +211,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         overlayView = (ViredroidOverlayView) findViewById(R.id.overlay);
         overlayView.show3DToast("Here is your desktop @<ipaddress>");
-        // CardboardDeviceParams params = getCardboardView().getCardboardDeviceParams();
-        // params.setInterLensDistance(.05f);
-        // updateCardboardDeviceParams(params);
     }
 
     @Override
@@ -445,6 +442,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
 
+        GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
         checkGLError("onSurfaceCreated");
         imageQueue = new ArrayBlockingQueue<Update>(10);
         UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
