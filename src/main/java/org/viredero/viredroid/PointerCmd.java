@@ -51,9 +51,6 @@ public class PointerCmd implements Command {
         int newX = dis.readInt();
         int newY = dis.readInt();
         boolean hasCursor = dis.readBoolean();
-        if (eraseImageBytes != null) {
-            eraseImageBytes.position(0);
-        }
         if (hasCursor) {
             int newWidth = dis.readInt();
             int newHeight = dis.readInt();
