@@ -22,24 +22,29 @@ package org.viredero.viredroid;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.DataInputStream;
 
 public class InitReplyCmd implements Command {
 
-    private InputStream is;
+    private final DataInputStream dis;
+    private final int texId;
 
-    public InitReplyCmd(InputStream is) {
-        this.is = is;
+    public InitReplyCmd(InputStream is, int screenTexDataHandle) {
+        this.dis = new DataInputStream(is);
+        this.texId = screenTexDataHandle;
     }
 
     @Override
     public Update exec() throws IOException {
-        int res = is.read();
+        int res = dis.read();
         InitReplyResultCode code = InitReplyResultCode.fromInt(res);
         if (code != InitReplyResultCode.SUCCESS) {
             throw new RuntimeException("Handshake failed: " + code.getMessage());
         }
-        int scrFmt = is.read();
-        int pntrFmt = is.read();
-        return null;
+        int scrFmt = dis.read();
+        int pntrFmt = dis.read();
+        int width = dis.readInt();
+        int height = dis.readInt();
+        return new SetupScreen(texId, width, height, scrFmt, pntrFmt);
     }
 }

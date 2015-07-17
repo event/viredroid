@@ -228,25 +228,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
  
         GLES20.glGenTextures(1, textureHandle, 0);
  
-        if (textureHandle[0] != 0) {
-            // Bind to the texture in OpenGL
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
- 
-            // Set filtering
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
- 
-            ByteBuffer imageBuf = ByteBuffer.allocateDirect(3*1280*800)
-                .order(ByteOrder.nativeOrder());
-            byte[] bufArr = imageBuf.array();
-            Arrays.fill(bufArr, (byte)10);
-            imageBuf.position(0);
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB
-                                , 1280, 800, 0, GLES20.GL_RGB
-                                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
-        } else {
+        if (textureHandle[0] == 0) {
             throw new RuntimeException("Error loading texture.");
         }
  

@@ -61,7 +61,7 @@ public abstract class AbstractCmdPump implements Runnable {
         this.is = createIS();
         commands = new ArrayList<Command>(4);
         commands.add(new ErrorCmd()); // we send Init, not receive it
-        commands.add(new InitReplyCmd(is));
+        commands.add(new InitReplyCmd(is, screenTexDataHandle));
         commands.add(new ImageCmd(is, screenTexDataHandle));
         commands.add(new PointerCmd(is, pointTexDataHandle));
         commands.add(new DistanceCmd(is));
