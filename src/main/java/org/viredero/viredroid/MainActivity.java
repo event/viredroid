@@ -443,13 +443,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
             }
         }
         ParcelFileDescriptor fd = manager.openAccessory(accessory);
-        Runnable r;
-        if (fd != null) {
-            r = new UsbCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle, fd);
-        } else {
-            r = new NetCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle
-                               , "192.168.1.77", 1242);
+        if (fd == null) {
+            return;
         }
+        Runnable r = new UsbCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle, fd);
         new Thread(r).start();
     }
 
