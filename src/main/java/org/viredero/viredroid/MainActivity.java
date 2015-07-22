@@ -568,9 +568,4 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         vibrator.vibrate(50);
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        finish();
-    }
 }
