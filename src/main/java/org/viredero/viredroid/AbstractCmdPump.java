@@ -58,7 +58,6 @@ public abstract class AbstractCmdPump implements Runnable {
     public abstract OutputStream createOS() throws IOException;
 
     private void initCommands() throws IOException {
-        this.is = createIS();
         commands = new ArrayList<Command>(4);
         commands.add(new ErrorCmd()); // we send Init, not receive it
         commands.add(new InitReplyCmd(is, screenTexDataHandle));
@@ -77,6 +76,8 @@ public abstract class AbstractCmdPump implements Runnable {
     }
 
     private void do_run() throws IOException{
+        is = createIS();
+        is.skip(is.available()); //cleanup
         initPeer();
         initCommands();
         while (true) {
