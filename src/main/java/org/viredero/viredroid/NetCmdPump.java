@@ -40,9 +40,10 @@ public class NetCmdPump extends AbstractCmdPump {
     private final int port;
     private Socket s;
 
-    public NetCmdPump(BlockingQueue<Update> queue, int screenTexDataHandle
-                      , int pointTexDataHandle, String addr, int port){
-        super(queue, screenTexDataHandle, pointTexDataHandle);
+    public NetCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+                      , int screenTexDataHandle, int pointTexDataHandle
+                      , String addr, int port){
+        super(queue, renderer, screenTexDataHandle, pointTexDataHandle);
         this.port = port;
         try {
             this.addr = InetAddress.getByName(addr);

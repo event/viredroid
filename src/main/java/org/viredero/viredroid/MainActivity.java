@@ -65,7 +65,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static final float Z_NEAR = 0.1f;
     private static final float Z_FAR = 100.0f;
 
-    private static final float CAMERA_Z = 0.01f;
+    private static final float CAMERA_Z = 3f;
 
     private static final int COORDS_PER_VERTEX = 3;
     private static final int COORDS_PER_TEXTURE = 2;
@@ -138,10 +138,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float objectDistance = 10f;
 
     private Vibrator vibrator;
-    private ViredroidOverlayView overlayView;
 
     private BlockingQueue<Update> imageQueue;
-    
     
     /**
      * Converts a raw text file, saved as a resource, into an OpenGL ES shader.
@@ -208,9 +206,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         modelView = new float[16];
         modelFloor = new float[16];
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-
-        overlayView = (ViredroidOverlayView) findViewById(R.id.overlay);
-        overlayView.show3DToast("Here is your desktop @<ipaddress>");
     }
 
     @Override
@@ -338,6 +333,10 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         screenTextures.position(0);
     }   
 
+    public void requestRender() {
+        getCardboardView().requestRender();
+    }
+    
     /**
      * Creates the buffers we use to store information about the 3D world.
      *
@@ -446,7 +445,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         if (fd == null) {
             return;
         }
-        Runnable r = new UsbCmdPump(imageQueue, screenTexDataHandle, pointerTexDataHandle, fd);
+        Runnable r = new UsbCmdPump(imageQueue, this, screenTexDataHandle, pointerTexDataHandle, fd);
         new Thread(r).start();
     }
 
@@ -508,7 +507,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
      *
      * We've set all of our transformation matrices. Now we simply pass them into the shader.
      */
-    public void drawScreen() {
+    private void drawScreen() {
         GLES20.glUseProgram(screenProgram);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -518,9 +517,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pointerTexDataHandle);
         GLES20.glUniform1i(pointTexUnihandle, 1);
         Update update = imageQueue.poll();
-        while (update != null) {
+        if (update != null) {
             update.draw();
-            update = imageQueue.poll();
         }
         
         GLES20.glVertexAttribPointer(

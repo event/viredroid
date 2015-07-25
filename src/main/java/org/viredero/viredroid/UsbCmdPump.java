@@ -40,9 +40,10 @@ public class UsbCmdPump extends AbstractCmdPump {
 
     private static final String TAG = "viredroid";
     private ParcelFileDescriptor fd;
-    public UsbCmdPump(BlockingQueue<Update> queue, int screenTexDataHandle
-                      , int pointTexDataHandle, ParcelFileDescriptor fd){
-        super(queue, screenTexDataHandle, pointTexDataHandle);
+    public UsbCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+                      , int screenTexDataHandle, int pointTexDataHandle
+                      , ParcelFileDescriptor fd){
+        super(queue, renderer, screenTexDataHandle, pointTexDataHandle);
         this.fd = fd;
     }
 

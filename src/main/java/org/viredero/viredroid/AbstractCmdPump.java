@@ -46,10 +46,12 @@ public abstract class AbstractCmdPump implements Runnable {
     private InputStream is;
     private int screenTexDataHandle;
     private int pointTexDataHandle;
+    private MainActivity renderer;
     
-    public AbstractCmdPump(BlockingQueue<Update> queue, int screenTexDataHandle
-                           , int pointTexDataHandle){
+    public AbstractCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+                           , int screenTexDataHandle, int pointTexDataHandle){
         this.queue = queue;
+        this.renderer = renderer;
         this.screenTexDataHandle = screenTexDataHandle;
         this.pointTexDataHandle = pointTexDataHandle;
     }
@@ -89,6 +91,7 @@ public abstract class AbstractCmdPump implements Runnable {
             Update u = cmd.exec();
             if (u != null) {
                 queue.offer(u);
+                renderer.requestRender();
             }
         }
     }
