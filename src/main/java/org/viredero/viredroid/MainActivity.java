@@ -135,19 +135,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private float[] modelView;
     private float[] modelFloor;
 
+    HeadTransform lastHeadXform;
+    
     private float objectDistance = 10f;
 
     private Vibrator vibrator;
 
     private BlockingQueue<Update> imageQueue;
     
-    /**
-     * Converts a raw text file, saved as a resource, into an OpenGL ES shader.
-     *
-     * @param type The type of shader we will be creating.
-     * @param resId The resource ID of the raw text file about to be turned into a shader.
-     * @return The shader object handler.
-     */
     private int loadGLShader(int type, int resId) {
         String code = readRawTextFile(resId);
         int shader = GLES20.glCreateShader(type);
@@ -192,7 +187,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setConvertTapIntoTrigger(true);
         setContentView(R.layout.common_ui);
         CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);
@@ -200,22 +195,23 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         modelScreen = new float[16];
         camera = new float[16];
-        Matrix.setLookAtM(camera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+        Matrix.setIdentityM(camera, 0);
+//        Matrix.setLookAtM(camera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+        // Log.i(TAG, "camera");
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , camera[0], camera[4], camera[8], camera[12]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , camera[1], camera[5], camera[9], camera[13]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , camera[2], camera[6], camera[10], camera[14]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , camera[3], camera[7], camera[11], camera[15]));
         sceneView = new float[16];
         modelViewProjection = new float[16];
         modelView = new float[16];
         modelFloor = new float[16];
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-    }
-
-    @Override
-    public void onRendererShutdown() {
-        Log.i(TAG, "onRendererShutdown");
-    }
-
-    @Override
-    public void onSurfaceChanged(int width, int height) {
-        Log.i(TAG, "onSurfaceChanged");
+        Log.i(TAG, "onCreate");
     }
 
     private int loadScreenTexture() {
@@ -432,6 +428,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         if (accessory == null) {
             UsbAccessory[] accessories = manager.getAccessoryList();
+            if (accessories == null) {
+                return;
+            }
             int i = accessories.length;
             while (i > 0 && accessory == null) {
                 i -= 1;
@@ -439,6 +438,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
                 if ("x-viredero".equals(accessories[i].getModel())) {
                     accessory = accessories[i];
                 }
+            }
+            if (accessory == null) {
+                return;
             }
         }
         ParcelFileDescriptor fd = manager.openAccessory(accessory);
@@ -474,7 +476,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onNewFrame(HeadTransform headTransform) {
-
+        lastHeadXform = headTransform;
     }
 
     @Override
@@ -483,6 +485,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         checkGLError("mColorParam");
 
+// TODO: camera = identity -> eyeView = sceneView
         Matrix.multiplyMM(sceneView, 0, eye.getEyeView(), 0, camera, 0);
 
         Matrix.multiplyMV(lightPosInEyeSpace, 0, sceneView, 0, LIGHT_POS_IN_WORLD_SPACE, 0);
@@ -496,10 +499,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0,
                           modelView, 0);
         drawFloor();
-    }
-
-    @Override
-    public void onFinishFrame(Viewport viewport) {
     }
 
     /**
@@ -561,9 +560,40 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
     @Override
     public void onCardboardTrigger() {
-        Log.i(TAG, "onCardboardTrigger");
-        // Always give user feedback.
+        float[] headView = new float[16];
+        lastHeadXform.getHeadView(headView, 0);
+        Matrix.invertM(modelScreen, 0, headView, 0);
+        Matrix.translateM(modelScreen, 0, 0, 0, -objectDistance);
+//        Matrix.multiplyMM(modelScreen, 0, headView, 0, modelScreen, 0);
+        // Log.i(TAG, "trigger");
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , headView[0], headView[4], headView[8], headView[12]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , headView[1], headView[5], headView[9], headView[13]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , headView[2], headView[6], headView[10], headView[14]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , headView[3], headView[7], headView[11], headView[15]));
+        // Log.i(TAG, "scene");
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , modelScreen[0], modelScreen[4], modelScreen[8], modelScreen[12]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , modelScreen[1], modelScreen[5], modelScreen[9], modelScreen[13]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , modelScreen[2], modelScreen[6], modelScreen[10], modelScreen[14]));
+        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
+        //                          , modelScreen[3], modelScreen[7], modelScreen[11], modelScreen[15]));
         vibrator.vibrate(50);
+    }
+
+    @Override
+    public void onRendererShutdown() {
+    }
+    @Override
+    public void onSurfaceChanged(int width, int height) {
+    }
+    @Override
+    public void onFinishFrame(Viewport viewport) {
     }
 
 }
