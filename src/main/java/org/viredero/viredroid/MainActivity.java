@@ -196,16 +196,6 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         modelScreen = new float[16];
         camera = new float[16];
         Matrix.setIdentityM(camera, 0);
-//        Matrix.setLookAtM(camera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
-        // Log.i(TAG, "camera");
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , camera[0], camera[4], camera[8], camera[12]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , camera[1], camera[5], camera[9], camera[13]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , camera[2], camera[6], camera[10], camera[14]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , camera[3], camera[7], camera[11], camera[15]));
         sceneView = new float[16];
         modelViewProjection = new float[16];
         modelView = new float[16];
@@ -563,26 +553,9 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         float[] headView = new float[16];
         lastHeadXform.getHeadView(headView, 0);
         Matrix.invertM(modelScreen, 0, headView, 0);
+        System.arraycopy(modelScreen, 0, modelFloor, 0, 16);
         Matrix.translateM(modelScreen, 0, 0, 0, -objectDistance);
-//        Matrix.multiplyMM(modelScreen, 0, headView, 0, modelScreen, 0);
-        // Log.i(TAG, "trigger");
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , headView[0], headView[4], headView[8], headView[12]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , headView[1], headView[5], headView[9], headView[13]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , headView[2], headView[6], headView[10], headView[14]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , headView[3], headView[7], headView[11], headView[15]));
-        // Log.i(TAG, "scene");
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , modelScreen[0], modelScreen[4], modelScreen[8], modelScreen[12]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , modelScreen[1], modelScreen[5], modelScreen[9], modelScreen[13]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , modelScreen[2], modelScreen[6], modelScreen[10], modelScreen[14]));
-        // Log.i(TAG, String.format("!!! %2.2f %2.2f %2.2f %2.2f"
-        //                          , modelScreen[3], modelScreen[7], modelScreen[11], modelScreen[15]));
+        Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
         vibrator.vibrate(50);
     }
 
