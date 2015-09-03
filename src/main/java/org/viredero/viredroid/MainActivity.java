@@ -142,6 +142,8 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private Vibrator vibrator;
 
     private BlockingQueue<Update> imageQueue;
+    private Thread cmdPump;
+    private ParcelFileDescriptor usbFd;
     
     private int loadGLShader(int type, int resId) {
         String code = readRawTextFile(resId);
@@ -433,12 +435,14 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
                 return;
             }
         }
-        ParcelFileDescriptor fd = manager.openAccessory(accessory);
-        if (fd == null) {
+        usbFd = manager.openAccessory(accessory);
+        if (usbFd == null) {
             return;
         }
-        Runnable r = new UsbCmdPump(imageQueue, this, screenTexDataHandle, pointerTexDataHandle, fd);
-        new Thread(r).start();
+        Runnable r = new UsbCmdPump(imageQueue, this, screenTexDataHandle
+                                    , pointerTexDataHandle, usbFd);
+        cmdPump = new Thread(r);
+        cmdPump.start();
     }
 
     /**
@@ -559,6 +563,23 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         vibrator.vibrate(50);
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i(TAG, "onStop");
+        cmdPump.interrupt();
+        while (cmdPump.isAlive()) {
+            try {
+                cmdPump.join();
+            } catch (InterruptedException ie) {
+            }
+        }
+        try {
+            usbFd.close();
+        } catch(IOException e) {
+        }
+        finish();
+    }
     @Override
     public void onRendererShutdown() {
     }

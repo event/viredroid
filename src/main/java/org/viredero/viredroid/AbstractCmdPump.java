@@ -82,7 +82,7 @@ public abstract class AbstractCmdPump implements Runnable {
         is.skip(is.available()); //cleanup
         initPeer();
         initCommands();
-        while (true) {
+        while (! Thread.interrupted()) {
             int code = is.read();
             if (code < 0 || code >= commands.size()) {
                 throw new RuntimeException("Received unknown command " + code);
