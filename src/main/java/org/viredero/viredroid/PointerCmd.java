@@ -29,7 +29,6 @@ import java.util.Arrays;
 import android.util.Log;
 
 public class PointerCmd implements Command {
-    private static final String TAG = "viredroid";
 
     private int pointerTexDataHandle;
     private DataInputStream dis;

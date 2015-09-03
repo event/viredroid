@@ -35,8 +35,6 @@ import java.util.concurrent.BlockingQueue;
 
 public abstract class AbstractCmdPump implements Runnable {
 
-    private static final String TAG = "viredroid";
-
     private static final int VIREDERO_PROTO_VERSION = 1;
     private static final int SCREEN_FMT_RGB = 1;
     private static final int POINTER_FMT_RGBA = 1; 
@@ -46,9 +44,9 @@ public abstract class AbstractCmdPump implements Runnable {
     private InputStream is;
     private int screenTexDataHandle;
     private int pointTexDataHandle;
-    private MainActivity renderer;
+    private ViredroidGLActivity renderer;
     
-    public AbstractCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+    public AbstractCmdPump(BlockingQueue<Update> queue, ViredroidGLActivity renderer
                            , int screenTexDataHandle, int pointTexDataHandle){
         this.queue = queue;
         this.renderer = renderer;
@@ -99,7 +97,8 @@ public abstract class AbstractCmdPump implements Runnable {
     private void initPeer() throws IOException {
         OutputStream os = createOS();
         if (os == null) {
-            Log.i(TAG, "Aborting peer initialization: output stream not created");
+            Log.i(ViredroidGLActivity.LOGTAG
+                  , "Aborting peer initialization: output stream not created");
             return;
         }
         os.write(0); //init cmd code

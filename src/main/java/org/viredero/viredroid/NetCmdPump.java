@@ -34,13 +34,11 @@ import android.util.Log;
 
 public class NetCmdPump extends AbstractCmdPump {
 
-    private static final String TAG = "viredroid";
-
     private final InetAddress addr;
     private final int port;
     private Socket s;
 
-    public NetCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+    public NetCmdPump(BlockingQueue<Update> queue, ViredroidGLActivity renderer
                       , int screenTexDataHandle, int pointTexDataHandle
                       , String addr, int port){
         super(queue, renderer, screenTexDataHandle, pointTexDataHandle);

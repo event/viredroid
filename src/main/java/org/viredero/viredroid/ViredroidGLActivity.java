@@ -55,12 +55,9 @@ import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
-/**
- * A Cardboard sample application.
- */
-public class MainActivity extends CardboardActivity implements CardboardView.StereoRenderer {
+public class ViredroidGLActivity extends CardboardActivity implements CardboardView.StereoRenderer {
 
-    private static final String TAG = "viredroid";
+    public static final String LOGTAG = "viredroid";
 
     private static final float Z_NEAR = 0.1f;
     private static final float Z_FAR = 100.0f;
@@ -157,7 +154,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
 
         // If the compilation failed, delete the shader.
         if (compileStatus[0] == 0) {
-            Log.e(TAG, "Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
+            Log.e(LOGTAG, "Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
             GLES20.glDeleteShader(shader);
             shader = 0;
         }
@@ -177,7 +174,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     private static void checkGLError(String label) {
         int error;
         while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-            Log.e(TAG, label + ": glError " + error + " " + GLU.gluErrorString(error));
+            Log.e(LOGTAG, label + ": glError " + error + " " + GLU.gluErrorString(error));
             throw new RuntimeException(label + ": glError " + error+ " " + GLU.gluErrorString(error));
         }
     }
@@ -203,7 +200,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
         modelView = new float[16];
         modelFloor = new float[16];
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-        Log.i(TAG, "onCreate");
+        Log.i(LOGTAG, "onCreate");
     }
 
     private int loadScreenTexture() {
@@ -335,7 +332,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
      */
     @Override
     public void onSurfaceCreated(EGLConfig config) {
-        Log.i(TAG, "onSurfaceCreated");
+        Log.i(LOGTAG, "onSurfaceCreated");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well.
 
         fillScreenCoords();
@@ -566,7 +563,7 @@ public class MainActivity extends CardboardActivity implements CardboardView.Ste
     @Override
     public void onStop() {
         super.onStop();
-        Log.i(TAG, "onStop");
+        Log.i(LOGTAG, "onStop");
         cmdPump.interrupt();
         while (cmdPump.isAlive()) {
             try {

@@ -30,7 +30,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 public class ImageCmd implements Command {
-    private static final String TAG = "viredroid";
 
     private int screenTexDataHandle;
     private DataInputStream dis;

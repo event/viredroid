@@ -38,9 +38,8 @@ import java.util.concurrent.BlockingQueue;
 
 public class UsbCmdPump extends AbstractCmdPump {
 
-    private static final String TAG = "viredroid";
     private ParcelFileDescriptor fd;
-    public UsbCmdPump(BlockingQueue<Update> queue, MainActivity renderer
+    public UsbCmdPump(BlockingQueue<Update> queue, ViredroidGLActivity renderer
                       , int screenTexDataHandle, int pointTexDataHandle
                       , ParcelFileDescriptor fd){
         super(queue, renderer, screenTexDataHandle, pointTexDataHandle);
