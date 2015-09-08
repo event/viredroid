@@ -17,7 +17,7 @@
             android:label="@string/app_name" >
 
         <activity
-                android:name=".MainActivity"
+                android:name=".ViredroidGLActivity"
                 android:label="@string/app_name"
                 android:screenOrientation="landscape"
                 android:configChanges="orientation|keyboardHidden|screenSize"
