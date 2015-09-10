@@ -27,11 +27,13 @@ import java.io.DataInputStream;
 public class InitReplyCmd implements Command {
 
     private final DataInputStream dis;
-    private final int texId;
+    private final int screenTexId;
+    private final int pointerTexId;
 
-    public InitReplyCmd(InputStream is, int screenTexDataHandle) {
+    public InitReplyCmd(InputStream is, int screenTexDataHandle, int pointerTexDataHandle) {
         this.dis = new DataInputStream(is);
-        this.texId = screenTexDataHandle;
+        this.screenTexId = screenTexDataHandle;
+        this.pointerTexId = pointerTexDataHandle;
     }
 
     @Override
@@ -45,6 +47,6 @@ public class InitReplyCmd implements Command {
         int pntrFmt = dis.read();
         int width = dis.readInt();
         int height = dis.readInt();
-        return new SetupScreen(texId, width, height, scrFmt, pntrFmt);
+        return new SetupScreen(screenTexId, pointerTexId, width, height, scrFmt, pntrFmt);
     }
 }

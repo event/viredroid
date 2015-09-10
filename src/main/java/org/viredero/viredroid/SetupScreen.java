@@ -28,16 +28,18 @@ import java.nio.ByteOrder;
 public class SetupScreen implements Update {
     private final int width;
     private final int height;
-    private final int texId;
+    private final int screenTexId;
+    private final int pointerTexId;
 
-    public SetupScreen(int texId, int width, int height, int screenCmdFmt, int pointerCmdFmt) {
+    public SetupScreen(int screenTexId, int pointerTexId, int width
+                       , int height, int screenCmdFmt, int pointerCmdFmt) {
         this.width = width;
         this.height = height;
-        this.texId = texId;
+        this.screenTexId = screenTexId;
+        this.pointerTexId = pointerTexId;
     }
 
-    @Override
-    public void draw() {
+    private void fillAndDraw(int texId, int format, int bytes_per_pix, byte value) {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, texId);
  
         // Set filtering
@@ -46,13 +48,19 @@ public class SetupScreen implements Update {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
                                , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
  
-        ByteBuffer imageBuf = ByteBuffer.allocateDirect(3 * width * height)
+        ByteBuffer imageBuf = ByteBuffer.allocateDirect(bytes_per_pix * width * height)
             .order(ByteOrder.nativeOrder());
         byte[] buf = imageBuf.array();
-        Arrays.fill(buf, (byte)10);
+        Arrays.fill(buf, value);
         imageBuf.position(0);
-        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB
-                            , width, height, 0, GLES20.GL_RGB
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, format
+                            , width, height, 0, format
                             , GLES20.GL_UNSIGNED_BYTE, imageBuf);
+    }
+    
+    @Override
+    public void draw() {
+        fillAndDraw(screenTexId, GLES20.GL_RGB, 3, (byte)32);
+        fillAndDraw(pointerTexId, GLES20.GL_RGBA, 4, (byte)0);
     }
 }
