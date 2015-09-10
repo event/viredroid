@@ -52,6 +52,7 @@ import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.lang.StringBuilder;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -81,10 +82,6 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         renderer = new ViredroidRenderer(this);
     }
 
-    public void requestRender() {
-        getCardboardView().requestRender();
-    }
-    
     @Override
     public void onSurfaceCreated(EGLConfig config) {
         renderer.onSurfaceCreated(config);
@@ -125,16 +122,16 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) {
+            String line = reader.readLine();
+            while (line != null) {
                 sb.append(line).append("\n");
+                line = reader.readLine();
             }
             reader.close();
             return sb.toString();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Read file failed");
         }
-        return null;
     }
 
     @Override
@@ -144,7 +141,7 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
 
     @Override
     public void onDrawEye(Eye eye) {
-        renderer.onDrawEye(eye, imageQueue);
+        renderer.onDrawEye(eye, imageQueue.poll());
     }
 
     @Override
@@ -180,4 +177,13 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
     public void onFinishFrame(Viewport viewport) {
     }
 
+    public static void handleError(String errorText) {
+        //TODO: something nice should be here, like friendly text, graceful exit
+        //       and angry email to developers
+        throw new RuntimeException(errorText);
+    }
+
+    public void requestRender() {
+        getCardboardView().requestRender();
+    }
 }

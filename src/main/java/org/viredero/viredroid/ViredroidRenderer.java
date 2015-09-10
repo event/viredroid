@@ -52,6 +52,7 @@ import java.nio.ShortBuffer;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.lang.StringBuilder;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
@@ -68,6 +69,7 @@ public class ViredroidRenderer {
     private static final int BYTES_PER_SHORT = 2;
 
     private static final float FLOOR_DEPTH = 20f;
+    private static final float OBJECT_DISTANCE = 10f;
     // We keep the light always position just above the user.
     public static final float[] FLOOR_COORDS = new float[] {
         200f, 0, -200f,
@@ -94,6 +96,11 @@ public class ViredroidRenderer {
         0.0f, 2.0f, 0.0f, 1.0f };
 
     private final float[] lightPosInEyeSpace = new float[4];
+
+    private final float[] modelScreen = new float[16];
+    private final float[] modelViewProjection = new float[16];
+    private final float[] modelView = new float[16];
+    private final float[] modelFloor = new float[16];
 
     private FloatBuffer floorVertices;
     private FloatBuffer floorNormals;
@@ -123,39 +130,23 @@ public class ViredroidRenderer {
     private int floorLightPosParam;
     private int floorColorUParam;
 
-    private float[] modelScreen;
-    private float[] camera;
-    private float[] sceneView;
-    private float[] modelViewProjection;
-    private float[] modelView;
-    private float[] modelFloor;
-
-    private float objectDistance = 10f;
     private ViredroidGLActivity activity;
 
     public ViredroidRenderer(ViredroidGLActivity activity) {
         this.activity = activity;
     }
 
-    private static void checkGLError(String label) {
-        int error;
-        while ((error = GLES20.glGetError()) != GLES20.GL_NO_ERROR) {
-            Log.e(ViredroidGLActivity.LOGTAG, label + ": glError "
-                  + error + " " + GLU.gluErrorString(error));
-            throw new RuntimeException(label + ": glError " + error+ " " + GLU.gluErrorString(error));
+    private static void checkGLError() {
+        int error = GLES20.glGetError();
+        if (error != GLES20.GL_NO_ERROR) {
+            String errorText = new StringBuilder("glError ").append(error)
+                .append(": ").append(GLU.gluErrorString(error)).toString();
+            ViredroidGLActivity.handleError(errorText);
         }
     }
 
     public void onSurfaceCreated(EGLConfig config) {
-        modelScreen = new float[16];
-        camera = new float[16];
-        Matrix.setIdentityM(camera, 0);
-        sceneView = new float[16];
-        modelViewProjection = new float[16];
-        modelView = new float[16];
-        modelFloor = new float[16];
-        GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f); // Dark background so text shows up well.
-
+        GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f);
         fillScreenCoords();
         // make a floor
         ByteBuffer bbFloorVertices = ByteBuffer.allocateDirect(FLOOR_COORDS.length * 4);
@@ -181,9 +172,9 @@ public class ViredroidRenderer {
         GLES20.glLinkProgram(screenProgram);
         GLES20.glUseProgram(screenProgram);
 
-        screenTexDataHandle = loadScreenTexture();
-        pointerTexDataHandle = loadPointerTexture();
-        checkGLError("Screen program");
+        screenTexDataHandle = newTexture();
+        pointerTexDataHandle = newTexture();
+        checkGLError();
 
         screenPositionParam = GLES20.glGetAttribLocation(screenProgram, "a_Position");
         screenTexParam = GLES20.glGetAttribLocation(screenProgram, "a_TexCoord");
@@ -195,7 +186,7 @@ public class ViredroidRenderer {
         GLES20.glEnableVertexAttribArray(screenPositionParam);
         GLES20.glEnableVertexAttribArray(screenTexParam);
 
-        checkGLError("Screen program params");
+        checkGLError();
 
         floorProgram = GLES20.glCreateProgram();
         GLES20.glAttachShader(floorProgram, floorVertexShader);
@@ -203,7 +194,7 @@ public class ViredroidRenderer {
         GLES20.glLinkProgram(floorProgram);
         GLES20.glUseProgram(floorProgram);
 
-        checkGLError("Floor program");
+        checkGLError();
 
         floorModelParam = GLES20.glGetUniformLocation(floorProgram, "u_Model");
         floorModelViewParam = GLES20.glGetUniformLocation(floorProgram, "u_MVMatrix");
@@ -217,20 +208,20 @@ public class ViredroidRenderer {
         GLES20.glEnableVertexAttribArray(floorPositionParam);
         GLES20.glEnableVertexAttribArray(floorNormalParam);
 
-        checkGLError("Floor program params");
+        checkGLError();
 
         
         GLES20.glEnable(GLES20.GL_DEPTH_TEST);
 
         // Object first appears directly in front of user.
         Matrix.setIdentityM(modelScreen, 0);
-        Matrix.translateM(modelScreen, 0, 0, 0, -objectDistance);
+        Matrix.translateM(modelScreen, 0, 0, 0, -OBJECT_DISTANCE);
 
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
 
         GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
-        checkGLError("onSurfaceCreated");
+        checkGLError();
     }
     
 
@@ -305,71 +296,40 @@ public class ViredroidRenderer {
         screenIndices.position(0);
         screenVertices.position(0);
         screenTextures.position(0);
-    }   
-    private int loadScreenTexture() {
-        final int[] textureHandle = new int[1];
+    }
+    
+    private int newTexture() {
+        int[] textureHandle = new int[1];
  
         GLES20.glGenTextures(1, textureHandle, 0);
  
         if (textureHandle[0] == 0) {
-            throw new RuntimeException("Error loading texture.");
+            throw new RuntimeException("Error creating texture");
         }
  
         return textureHandle[0];
     }
 
-    private int loadPointerTexture() {
-        final int[] textureHandle = new int[1];
- 
-        GLES20.glGenTextures(1, textureHandle, 0);
- 
-        if (textureHandle[0] != 0) {
-            // Bind to the texture in OpenGL
-            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0]);
- 
-            // Set filtering
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_NEAREST);
-            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
-                                   , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
- 
-            ByteBuffer imageBuf = ByteBuffer.allocateDirect(4*1280*800)
-                .order(ByteOrder.nativeOrder());
-            byte[] bufArr = imageBuf.array();
-            Arrays.fill(bufArr, (byte)0);
-            imageBuf.position(0);
-            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA
-                                , 1280, 800, 0, GLES20.GL_RGBA
-                                , GLES20.GL_UNSIGNED_BYTE, imageBuf);
-        } else {
-            throw new RuntimeException("Error loading texture.");
-        }
- 
-        return textureHandle[0];
-    }
-
-    public void onDrawEye(Eye eye, BlockingQueue<Update> imageQueue) {
+    public void onDrawEye(Eye eye, Update update) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
-        checkGLError("mColorParam");
+        checkGLError();
 
-// TODO: camera = identity -> eyeView = sceneView
-        Matrix.multiplyMM(sceneView, 0, eye.getEyeView(), 0, camera, 0);
-
-        Matrix.multiplyMV(lightPosInEyeSpace, 0, sceneView, 0, LIGHT_POS_IN_WORLD_SPACE, 0);
+        float[] eyeView = eye.getEyeView();
+        Matrix.multiplyMV(lightPosInEyeSpace, 0, eyeView, 0, LIGHT_POS_IN_WORLD_SPACE, 0);
 
         float[] perspective = eye.getPerspective(Z_NEAR, Z_FAR);
-        Matrix.multiplyMM(modelView, 0, sceneView, 0, modelScreen, 0);
+        Matrix.multiplyMM(modelView, 0, eyeView, 0, modelScreen, 0);
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
-        drawScreen(imageQueue);
+        drawScreen(update);
 
-        Matrix.multiplyMM(modelView, 0, sceneView, 0, modelFloor, 0);
+        Matrix.multiplyMM(modelView, 0, eyeView, 0, modelFloor, 0);
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0,
                           modelView, 0);
         drawFloor();
     }
 
-    private void drawScreen(BlockingQueue<Update> imageQueue) {
+    private void drawScreen(Update update) {
         GLES20.glUseProgram(screenProgram);
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -379,7 +339,6 @@ public class ViredroidRenderer {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pointerTexDataHandle);
         GLES20.glUniform1i(pointTexUnihandle, 1);
 
-        Update update = imageQueue.poll();
         if (update != null) {
             update.draw();
         }
@@ -400,7 +359,7 @@ public class ViredroidRenderer {
             GLES20.GL_TRIANGLE_STRIP, screenIndicesSize
             , GLES20.GL_UNSIGNED_SHORT, screenIndices);
  
-        checkGLError("Drawing screen");
+        checkGLError();
     }
 
     private void drawFloor() {
@@ -419,9 +378,8 @@ public class ViredroidRenderer {
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
 
-        checkGLError("drawing floor");
+        checkGLError();
     }
-
 
     private int loadGLShader(int type, int resId) {
         String code = activity.readRawTextFile(resId);
@@ -433,17 +391,9 @@ public class ViredroidRenderer {
         final int[] compileStatus = new int[1];
         GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compileStatus, 0);
 
-        // If the compilation failed, delete the shader.
         if (compileStatus[0] == 0) {
-            Log.e(ViredroidGLActivity.LOGTAG, "Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
-            GLES20.glDeleteShader(shader);
-            shader = 0;
+            throw new RuntimeException("Error compiling shader: " + GLES20.glGetShaderInfoLog(shader));
         }
-
-        if (shader == 0) {
-            throw new RuntimeException("Error creating shader.");
-        }
-
         return shader;
     }
 
@@ -452,7 +402,7 @@ public class ViredroidRenderer {
         headPos.getHeadView(headView, 0);
         Matrix.invertM(modelScreen, 0, headView, 0);
         System.arraycopy(modelScreen, 0, modelFloor, 0, 16);
-        Matrix.translateM(modelScreen, 0, 0, 0, -objectDistance);
+        Matrix.translateM(modelScreen, 0, 0, 0, -OBJECT_DISTANCE);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
     }
 
