@@ -36,34 +36,41 @@ public class PointerCmd implements Command {
     private int y = 0;
     private int width = 0;
     private int height = 0;
+    private int eraseWidth = 0;
+    private int eraseHeight = 0;
     private ByteBuffer eraseImageBytes;
     private ByteBuffer pointerImageBytes;
+    private AbstractCmdPump cmdPump;
     
-    public PointerCmd(InputStream s, int pointerTexDataHandle) {
+    public PointerCmd(AbstractCmdPump cmdPump, InputStream s
+                      , int pointerTexDataHandle) {
         this.pointerTexDataHandle = pointerTexDataHandle;
         this.dis = new DataInputStream(s);
+        this.cmdPump = cmdPump;
     }
 
     @Override
     public Update exec() throws IOException {
-        Update u = null;
-        int newX = dis.readInt();
-        int newY = dis.readInt();
+        PointerUpdate erase = new PointerUpdate(
+            pointerTexDataHandle, eraseWidth, eraseHeight
+            , x, y, eraseImageBytes);
+        x = dis.readInt();
+        y = dis.readInt();
         boolean hasCursor = dis.readBoolean();
         if (hasCursor) {
-            int newWidth = dis.readInt();
-            int newHeight = dis.readInt();
-            int imageSize = 4 * newWidth * newHeight;
+            int rWidth = dis.readInt();
+            int rHeight = dis.readInt();
+            int imageSize = 4 * rWidth * rHeight;
             if (imageSize <= 0) {
                 throw new RuntimeException("image size <= 0");
             }
-            if (width != newWidth || height != newHeight) {
+            if (width != rWidth || height != rHeight) {
                 eraseImageBytes = ByteBuffer.allocateDirect(imageSize)
                     .order(ByteOrder.nativeOrder());
                 Arrays.fill(eraseImageBytes.array(), (byte)0);
+                pointerImageBytes = ByteBuffer.allocateDirect(imageSize)
+                    .order(ByteOrder.nativeOrder());
             }
-            pointerImageBytes = ByteBuffer.allocateDirect(imageSize)
-                .order(ByteOrder.nativeOrder());
             byte[] buf = pointerImageBytes.array();
             int totalRead = 0;
             while (imageSize > 0) {
@@ -75,25 +82,35 @@ public class PointerCmd implements Command {
                 totalRead += read;
             }
             pointerImageBytes.position(0);
-            
-            u = new MultiUpdate(
-                new PointerUpdate(pointerTexDataHandle, width, height
-                                  , x, y, eraseImageBytes)
-                , new PointerUpdate(pointerTexDataHandle, newWidth, newHeight
-                                    , newX, newY, pointerImageBytes));
-            width = newWidth;
-            height = newHeight;
+            width = rWidth;
+            height = rHeight;
         } else if (width == 0) {
             throw new RuntimeException("Cannot draw empty pointer");
-        } else if (x != newX || y != newY){
-            u = new MultiUpdate(
-                new PointerUpdate(pointerTexDataHandle, width, height
-                                  , x, y, eraseImageBytes)
-                , new PointerUpdate(pointerTexDataHandle, width, height
-                                    , newX, newY, pointerImageBytes));
         }
-        x = newX;
-        y = newY;
-        return u;
+        eraseWidth = limitDim(x, width, cmdPump.getWidth());
+        eraseHeight = limitDim(y, height, cmdPump.getHeight());
+        ByteBuffer pntr = pointerImageBytes;
+        if (eraseWidth != width || eraseHeight != height) {
+            pntr = ByteBuffer
+                .allocateDirect(4 * eraseWidth * eraseHeight)
+                .order(ByteOrder.nativeOrder());
+            byte[] buf = pntr.array();
+            for (int i = 0; i < eraseHeight; i += 1) {
+                pointerImageBytes.position(width * i * 4);
+                pointerImageBytes.get(buf, eraseWidth * i * 4, eraseWidth * 4);
+            }
+            pointerImageBytes.position(0);
+        }
+        return new MultiUpdate(erase, new PointerUpdate(
+                                   pointerTexDataHandle, eraseWidth, eraseHeight
+                                   , x, y, pntr));
+    }
+
+    private int limitDim(int offset, int val, int limit) {
+        if (offset + val <= limit) {
+            return val;
+        } else {
+            return limit - offset;
+        }
     }
 }
