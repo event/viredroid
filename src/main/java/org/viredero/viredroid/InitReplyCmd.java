@@ -29,11 +29,14 @@ public class InitReplyCmd implements Command {
     private final DataInputStream dis;
     private final int screenTexId;
     private final int pointerTexId;
+    private final AbstractCmdPump cmdPump;
 
-    public InitReplyCmd(InputStream is, int screenTexDataHandle, int pointerTexDataHandle) {
+    public InitReplyCmd(AbstractCmdPump cmdPump, InputStream is
+                        , int screenTexDataHandle, int pointerTexDataHandle) {
         this.dis = new DataInputStream(is);
         this.screenTexId = screenTexDataHandle;
         this.pointerTexId = pointerTexDataHandle;
+        this.cmdPump = cmdPump;
     }
 
     @Override
@@ -47,6 +50,8 @@ public class InitReplyCmd implements Command {
         int pntrFmt = dis.read();
         int width = dis.readInt();
         int height = dis.readInt();
+        cmdPump.setWidth(width);
+        cmdPump.setHeight(height);
         return new SetupScreen(screenTexId, pointerTexId, width, height, scrFmt, pntrFmt);
     }
 }

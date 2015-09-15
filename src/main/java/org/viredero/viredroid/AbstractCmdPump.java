@@ -45,6 +45,8 @@ public abstract class AbstractCmdPump implements Runnable {
     private int screenTexDataHandle;
     private int pointTexDataHandle;
     private ViredroidGLActivity renderer;
+    private int screenWidth;
+    private int screenHeight;
     
     public AbstractCmdPump(BlockingQueue<Update> queue, ViredroidGLActivity renderer
                            , int screenTexDataHandle, int pointTexDataHandle){
@@ -60,9 +62,9 @@ public abstract class AbstractCmdPump implements Runnable {
     private void initCommands() throws IOException {
         commands = new ArrayList<Command>(4);
         commands.add(new ErrorCmd()); // we send Init, not receive it
-        commands.add(new InitReplyCmd(is, screenTexDataHandle, pointTexDataHandle));
+        commands.add(new InitReplyCmd(this, is, screenTexDataHandle, pointTexDataHandle));
         commands.add(new ImageCmd(is, screenTexDataHandle));
-        commands.add(new PointerCmd(is, pointTexDataHandle));
+        commands.add(new PointerCmd(this, is, pointTexDataHandle));
         commands.add(new DistanceCmd(is));
     }
 
@@ -107,5 +109,21 @@ public abstract class AbstractCmdPump implements Runnable {
         os.write(POINTER_FMT_RGBA);  // OR'ed pointer image format constants
         os.flush();
         os.close();
+    }
+
+    public void setWidth(int width) {
+        screenWidth = width;
+    }
+
+    public int getWidth() {
+        return screenWidth;
+    }
+
+    public void setHeight(int height) {
+        screenHeight = height;
+    }
+
+    public int getHeight() {
+        return screenHeight;
     }
 }
