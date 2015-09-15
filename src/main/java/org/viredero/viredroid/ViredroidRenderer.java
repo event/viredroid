@@ -332,6 +332,10 @@ public class ViredroidRenderer {
     private void drawScreen(Update update) {
         GLES20.glUseProgram(screenProgram);
 
+        if (update != null) {
+            update.draw();
+        }
+
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, screenTexDataHandle);
         GLES20.glUniform1i(screenTexUnihandle, 0);
@@ -339,10 +343,6 @@ public class ViredroidRenderer {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pointerTexDataHandle);
         GLES20.glUniform1i(pointTexUnihandle, 1);
 
-        if (update != null) {
-            update.draw();
-        }
-        
         GLES20.glVertexAttribPointer(
             screenPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT
             , false, 0, screenVertices);
