@@ -50,8 +50,7 @@ public class InitReplyCmd implements Command {
         int pntrFmt = dis.read();
         int width = dis.readInt();
         int height = dis.readInt();
-        cmdPump.setWidth(width);
-        cmdPump.setHeight(height);
+        cmdPump.setDimentions(width, height);
         return new SetupScreen(screenTexId, pointerTexId, width, height, scrFmt, pntrFmt);
     }
 }

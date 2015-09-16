@@ -68,8 +68,10 @@ public class ViredroidRenderer {
     private static final int BYTES_PER_FLOAT = 4;
     private static final int BYTES_PER_SHORT = 2;
 
+    private static final float BASE_DISTANCE = 10f;
+    private static final float BASE_WIDTH = 1024f;
+
     private static final float FLOOR_DEPTH = 20f;
-    private static final float OBJECT_DISTANCE = 10f;
     // We keep the light always position just above the user.
     public static final float[] FLOOR_COORDS = new float[] {
         200f, 0, -200f,
@@ -95,6 +97,7 @@ public class ViredroidRenderer {
     private static final float[] LIGHT_POS_IN_WORLD_SPACE = new float[] {
         0.0f, 2.0f, 0.0f, 1.0f };
 
+    private float screenDistance = BASE_DISTANCE;
     private final float[] lightPosInEyeSpace = new float[4];
 
     private final float[] modelScreen = new float[16];
@@ -215,7 +218,7 @@ public class ViredroidRenderer {
 
         // Object first appears directly in front of user.
         Matrix.setIdentityM(modelScreen, 0);
-        Matrix.translateM(modelScreen, 0, 0, 0, -OBJECT_DISTANCE);
+        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
 
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
@@ -381,6 +384,10 @@ public class ViredroidRenderer {
         checkGLError();
     }
 
+    public void requestRender() {
+        activity.getCardboardView().requestRender();
+    }
+    
     private int loadGLShader(int type, int resId) {
         String code = activity.readRawTextFile(resId);
         int shader = GLES20.glCreateShader(type);
@@ -402,7 +409,7 @@ public class ViredroidRenderer {
         headPos.getHeadView(headView, 0);
         Matrix.invertM(modelScreen, 0, headView, 0);
         System.arraycopy(modelScreen, 0, modelFloor, 0, 16);
-        Matrix.translateM(modelScreen, 0, 0, 0, -OBJECT_DISTANCE);
+        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
     }
 
@@ -412,5 +419,12 @@ public class ViredroidRenderer {
 
     public int getPointerTexDataHandle() {
         return pointerTexDataHandle;
+    }
+
+    public void setDimentions(int width, int height) {
+        float scale = BASE_WIDTH < width ? BASE_WIDTH / width : 1.0f;
+        screenDistance = BASE_DISTANCE + BASE_DISTANCE * scale;
+        Matrix.setIdentityM(modelScreen, 0);
+        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
     }
 }

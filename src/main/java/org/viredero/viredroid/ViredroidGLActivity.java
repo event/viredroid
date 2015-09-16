@@ -111,7 +111,7 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         if (usbFd == null) {
             return;
         }
-        Runnable r = new UsbCmdPump(imageQueue, this, renderer.getScreenTexDataHandle()
+        Runnable r = new UsbCmdPump(imageQueue, renderer, renderer.getScreenTexDataHandle()
                                     , renderer.getPointerTexDataHandle(), usbFd);
         cmdPump = new Thread(r);
         cmdPump.start();
@@ -183,7 +183,4 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         throw new RuntimeException(errorText);
     }
 
-    public void requestRender() {
-        getCardboardView().requestRender();
-    }
 }

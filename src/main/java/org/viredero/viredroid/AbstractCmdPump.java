@@ -44,11 +44,11 @@ public abstract class AbstractCmdPump implements Runnable {
     private InputStream is;
     private int screenTexDataHandle;
     private int pointTexDataHandle;
-    private ViredroidGLActivity renderer;
+    private ViredroidRenderer renderer;
     private int screenWidth;
     private int screenHeight;
     
-    public AbstractCmdPump(BlockingQueue<Update> queue, ViredroidGLActivity renderer
+    public AbstractCmdPump(BlockingQueue<Update> queue, ViredroidRenderer renderer
                            , int screenTexDataHandle, int pointTexDataHandle){
         this.queue = queue;
         this.renderer = renderer;
@@ -111,16 +111,14 @@ public abstract class AbstractCmdPump implements Runnable {
         os.close();
     }
 
-    public void setWidth(int width) {
+    public void setDimentions(int width, int height) {
         screenWidth = width;
+        screenHeight = height;
+        renderer.setDimentions(width, height);
     }
 
     public int getWidth() {
         return screenWidth;
-    }
-
-    public void setHeight(int height) {
-        screenHeight = height;
     }
 
     public int getHeight() {
