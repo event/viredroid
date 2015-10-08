@@ -29,18 +29,35 @@ import java.io.DataInputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import java.util.LinkedList;
+import java.util.Queue;
+
 public class ImageCmd implements Command {
+
+    private static final int QUEUE_SIZE = 2;
 
     private int screenTexDataHandle;
     private DataInputStream dis;
+    private AbstractCmdPump cmdPump;
+    private Queue<ByteBuffer> bufQueue;
     
-    public ImageCmd(InputStream s, int screenTexDataHandle) {
-        this.screenTexDataHandle = screenTexDataHandle;
+    public ImageCmd(AbstractCmdPump cmdPump, InputStream s
+                    , int screenTexDataHandle) {
+        this.cmdPump = cmdPump;
         this.dis = new DataInputStream(s);
+        this.screenTexDataHandle = screenTexDataHandle;
     }
     
     @Override
     public Update exec() throws IOException {
+        if (bufQueue == null) {
+            int size = 3 * cmdPump.getWidth() * cmdPump.getHeight();
+            bufQueue = new LinkedList<ByteBuffer>();
+            for (int i = 0; i < QUEUE_SIZE; i += 1) {
+                bufQueue.add(ByteBuffer.allocateDirect(size)
+                             .order(ByteOrder.nativeOrder()));
+            }
+        }
         int width = dis.readInt();
         int height = dis.readInt();
         int xOffset = dis.readInt();
@@ -49,9 +66,9 @@ public class ImageCmd implements Command {
         if (imageSize <= 0) {
             throw new RuntimeException("image size <= 0");
         }
-        ByteBuffer imageBuf = ByteBuffer.allocateDirect(imageSize)
-            .order(ByteOrder.nativeOrder());
+        ByteBuffer imageBuf = bufQueue.poll();
         byte[] buf = imageBuf.array();
+        imageBuf.position(0);
         int totalRead = 0;
         while (imageSize > 0) {
             int read = dis.read(buf, totalRead, imageSize);
@@ -62,6 +79,7 @@ public class ImageCmd implements Command {
             totalRead += read;
         }
         imageBuf.position(0);
+        bufQueue.offer(imageBuf);
         return new ScreenUpdate(screenTexDataHandle, width, height
                                 , xOffset, yOffset, imageBuf);
     }
