@@ -72,7 +72,6 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setConvertTapIntoTrigger(true);
         setContentView(R.layout.common_ui);
         CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);

@@ -233,7 +233,7 @@ public class ViredroidRenderer {
         int slices = 50;
         float width = 16.0f;
         float height = 9.0f;
-        float depth = -5.0f;
+        float depth = -1.0f;
 
         screenVertices = ByteBuffer.allocateDirect(
             stacks * slices * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
