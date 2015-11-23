@@ -40,7 +40,21 @@ android {
         versionCode 1
         versionName "1.0"
     }
-
+    signingConfigs {
+        release {
+            storeFile file("viredroid.jks")
+            storePassword System.console().readLine("\nKeystore password: ")
+            keyPassword System.console().readLine("\nKey password: ")
+            keyAlias "viredroid"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            zipAlignEnabled true
+            signingConfig signingConfigs.release
+        }
+    }
     lintOptions.abortOnError false
 }
 
