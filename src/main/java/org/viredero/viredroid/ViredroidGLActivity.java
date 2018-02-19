@@ -40,6 +40,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.usb.UsbManager;
 import android.hardware.usb.UsbAccessory;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -81,34 +82,40 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         renderer = new ViredroidRenderer(this);
     }
 
+    private ParcelFileDescriptor getUsbFd(UsbManager manager) {
+        UsbAccessory[] accessories = manager.getAccessoryList();
+        // This array is either null or contains exactly one element
+        //  great API design...
+        if (accessories == null) {
+            return null;
+        }
+        UsbAccessory accessory = accessories[0];
+        //TODO: should be changed to url so other implementations are covered
+        if ("x-viredero".equals(accessory.getModel())) {
+            return manager.openAccessory(accessory);
+        }
+        return null;
+    }
+
     @Override
     public void onSurfaceCreated(EGLConfig config) {
         renderer.onSurfaceCreated(config);
         imageQueue = new ArrayBlockingQueue<Update>(10);
         UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
-        UsbAccessory accessory = (UsbAccessory) getIntent()
-            .getParcelableExtra(UsbManager.EXTRA_ACCESSORY);
+        Context context = getApplicationContext();
+        boolean firstRun = true;
 
-        if (accessory == null) {
-            UsbAccessory[] accessories = manager.getAccessoryList();
-            if (accessories == null) {
-                return;
-            }
-            int i = accessories.length;
-            while (i > 0 && accessory == null) {
-                i -= 1;
-                //TODO: should be changed to url so other implementations are covered
-                if ("x-viredero".equals(accessories[i].getModel())) {
-                    accessory = accessories[i];
+        while (usbFd == null) {
+            usbFd = getUsbFd(manager);
+            if (! firstRun) {
+//                Toast.makeText(context, "USB not connected", Toast.LENGTH_SHORT).show();
+                Log.i(LOGTAG, "wait 5 sec");
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ie) {
                 }
             }
-            if (accessory == null) {
-                return;
-            }
-        }
-        usbFd = manager.openAccessory(accessory);
-        if (usbFd == null) {
-            return;
+            firstRun = false;
         }
         Runnable r = new UsbCmdPump(imageQueue, renderer, renderer.getScreenTexDataHandle()
                                     , renderer.getPointerTexDataHandle(), usbFd);
