@@ -20,6 +20,8 @@
 
 package org.viredero.viredroid;
 
+import android.util.Log;
+
 import java.io.InputStream;
 import java.io.IOException;
 
@@ -31,6 +33,6 @@ public class ErrorCmd implements Command {
 
     @Override
     public void skip() throws IOException {
-        throw new RuntimeException("This command cannot be skipped");
+        Log.e(ViredroidGLActivity.LOGTAG, "Bad command is received!");
     }
 }
