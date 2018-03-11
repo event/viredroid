@@ -149,6 +149,7 @@ public class ViredroidRenderer {
     }
 
     public void onSurfaceCreated(EGLConfig config) {
+        Log.i(ViredroidGLActivity.LOGTAG, "Creating scene");
         GLES20.glClearColor(0.1f, 0.1f, 0.1f, 0.5f);
         fillScreenCoords();
         // make a floor
@@ -225,6 +226,7 @@ public class ViredroidRenderer {
 
         GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1);
         checkGLError();
+        Log.i(ViredroidGLActivity.LOGTAG, "Scene created");
     }
     
 

@@ -28,4 +28,9 @@ public class ErrorCmd implements Command {
     public Update exec() throws IOException {
         throw new RuntimeException("This command cannot be executed");
     }
+
+    @Override
+    public void skip() throws IOException {
+        throw new RuntimeException("This command cannot be skipped");
+    }
 }

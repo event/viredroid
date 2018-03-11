@@ -38,6 +38,7 @@ public abstract class AbstractCmdPump implements Runnable {
     private static final int VIREDERO_PROTO_VERSION = 1;
     private static final int SCREEN_FMT_RGB = 1;
     private static final int POINTER_FMT_RGBA = 1; 
+    private static final int INIT_REPLY_CMD_IDX = 1;
 
     private List<Command> commands;
     private BlockingQueue<Update> queue;
@@ -70,29 +71,41 @@ public abstract class AbstractCmdPump implements Runnable {
 
     @Override
     public void run() {
+        Log.d(ViredroidGLActivity.LOGTAG, "Starting cmd pump");
         try {
             do_run();
         } catch (IOException ioe) {
-            throw new RuntimeException("Error while pumping commands", ioe);
+            Log.i(ViredroidGLActivity.LOGTAG, "Pump terminated due to exception", ioe);
         }
     }
 
+    private void runCmd(Command cmd, boolean exec) throws IOException {
+        if (! exec) {
+            cmd.skip();
+            return;
+        }
+        Update u = cmd.exec();
+        if (u == null) {
+            return;
+        }
+        queue.offer(u);
+        renderer.requestRender();
+    }
+
     private void do_run() throws IOException{
+        boolean initFinished = false;
         is = createIS();
         is.skip(is.available()); //cleanup
         initPeer();
         initCommands();
         while (! Thread.interrupted()) {
             int code = is.read();
+            Log.d(ViredroidGLActivity.LOGTAG, String.format("Received command code %d", code));
             if (code < 0 || code >= commands.size()) {
                 throw new RuntimeException("Received unknown command " + code);
             }
-            Command cmd = commands.get(code);
-            Update u = cmd.exec();
-            if (u != null) {
-                queue.offer(u);
-                renderer.requestRender();
-            }
+            initFinished |= code == INIT_REPLY_CMD_IDX; // init is finished as soon as we got initReplyCmd
+            runCmd(commands.get(code), initFinished);
         }
     }
 

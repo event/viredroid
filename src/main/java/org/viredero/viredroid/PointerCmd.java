@@ -113,4 +113,16 @@ public class PointerCmd implements Command {
             return limit - offset;
         }
     }
+
+    @Override
+    public void skip() throws IOException {
+        dis.skipBytes(8); //skip x and y
+        boolean hasCursor = dis.readBoolean();
+        if (hasCursor) {
+            int rWidth = dis.readInt();
+            int rHeight = dis.readInt();
+            int imageSize = 4 * rWidth * rHeight;
+            dis.skipBytes(imageSize);
+        }
+    }
 }

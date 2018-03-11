@@ -26,6 +26,8 @@ import java.io.DataInputStream;
 
 public class InitReplyCmd implements Command {
 
+    private static final int CMD_BYTE_SIZE = 7;
+
     private final DataInputStream dis;
     private final int screenTexId;
     private final int pointerTexId;
@@ -52,5 +54,10 @@ public class InitReplyCmd implements Command {
         int height = dis.readInt();
         cmdPump.setDimentions(width, height);
         return new SetupScreen(screenTexId, pointerTexId, width, height, scrFmt, pntrFmt);
+    }
+
+    @Override
+    public void skip() throws IOException {
+        dis.skipBytes(CMD_BYTE_SIZE);
     }
 }

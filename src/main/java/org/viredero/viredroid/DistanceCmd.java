@@ -35,4 +35,7 @@ public class DistanceCmd implements Command {
     public Update exec() throws IOException {
         return null;
     }
+    @Override
+    public void skip() throws IOException {
+    }
 }

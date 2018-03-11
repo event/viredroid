@@ -24,4 +24,5 @@ import java.io.IOException;
 
 public interface Command {
     Update exec() throws IOException;
+    void skip() throws IOException;
 }

@@ -82,10 +82,10 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         renderer = new ViredroidRenderer(this);
     }
 
-    private ParcelFileDescriptor getUsbFd(UsbManager manager) {
+    private ParcelFileDescriptor getUsbFd(UsbManager manager) throws SecurityException {
         UsbAccessory[] accessories = manager.getAccessoryList();
         // This array is either null or contains exactly one element
-        //  great API design...
+        //  great API design!
         if (accessories == null) {
             return null;
         }
@@ -100,23 +100,23 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
     @Override
     public void onSurfaceCreated(EGLConfig config) {
         renderer.onSurfaceCreated(config);
-        imageQueue = new ArrayBlockingQueue<Update>(10);
-        UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
-        Context context = getApplicationContext();
-        boolean firstRun = true;
 
-        while (usbFd == null) {
+        terminateCmdPump();
+
+        imageQueue = new ArrayBlockingQueue<Update>(10);
+
+        UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);
+        try {
             usbFd = getUsbFd(manager);
-            if (! firstRun) {
-//                Toast.makeText(context, "USB not connected", Toast.LENGTH_SHORT).show();
-                Log.i(LOGTAG, "wait 5 sec");
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException ie) {
-                }
-            }
-            firstRun = false;
+        } catch (SecurityException se) {
+            Log.w(LOGTAG, "Restarting due to security exception");
+            return;
         }
+        if (usbFd == null) {
+            Log.w(LOGTAG, "USB not yet connected! Please connect usb and come back");
+            return;
+        }
+        Log.d(LOGTAG, "got usb fd!");
         Runnable r = new UsbCmdPump(imageQueue, renderer, renderer.getScreenTexDataHandle()
                                     , renderer.getPointerTexDataHandle(), usbFd);
         cmdPump = new Thread(r);
@@ -148,6 +148,9 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
     @Override
     public void onDrawEye(Eye eye) {
         renderer.onDrawEye(eye, imageQueue.poll());
+        if (!cmdPump.isAlive()) {
+            onStop();
+        }
     }
 
     @Override
@@ -156,10 +159,10 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         vibrator.vibrate(50);
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        Log.i(LOGTAG, "onStop");
+    private void terminateCmdPump() {
+        if (cmdPump == null) {
+            return;
+        }
         cmdPump.interrupt();
         while (cmdPump.isAlive()) {
             try {
@@ -167,9 +170,17 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
             } catch (InterruptedException ie) {
             }
         }
-        try {
-            usbFd.close();
-        } catch(IOException e) {
+    }
+    @Override
+    public void onStop() {
+        super.onStop();
+        Log.i(LOGTAG, "onStop");
+        terminateCmdPump();
+        if (usbFd != null) {
+            try {
+                usbFd.close();
+            } catch(IOException e) {
+            }
         }
         finish();
     }

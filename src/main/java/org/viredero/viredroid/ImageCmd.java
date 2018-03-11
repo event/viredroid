@@ -83,4 +83,13 @@ public class ImageCmd implements Command {
         return new ScreenUpdate(screenTexDataHandle, width, height
                                 , xOffset, yOffset, imageBuf);
     }
+
+    @Override
+    public void skip() throws IOException {
+        int width = dis.readInt();
+        int height = dis.readInt();
+        int imageSize = 3 * width * height;
+        dis.skipBytes(8 + imageSize); //8 is x and y offsets
+    }
+
 }
