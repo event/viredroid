@@ -50,6 +50,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.lang.StringBuilder;
@@ -315,7 +317,7 @@ public class ViredroidRenderer {
         return textureHandle[0];
     }
 
-    public void onDrawEye(Eye eye, Update update) {
+    public void onDrawEye(Eye eye, List<Update> updates) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
 
         checkGLError();
@@ -326,7 +328,7 @@ public class ViredroidRenderer {
         float[] perspective = eye.getPerspective(Z_NEAR, Z_FAR);
         Matrix.multiplyMM(modelView, 0, eyeView, 0, modelScreen, 0);
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
-        drawScreen(update);
+        drawScreen(updates);
 
         Matrix.multiplyMM(modelView, 0, eyeView, 0, modelFloor, 0);
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0,
@@ -334,11 +336,12 @@ public class ViredroidRenderer {
         drawFloor();
     }
 
-    private void drawScreen(Update update) {
+    private void drawScreen(List<Update> updates) {
         GLES20.glUseProgram(screenProgram);
 
-        if (update != null) {
+        for (Update update : updates) {
             update.draw();
+            Log.d(ViredroidGLActivity.LOGTAG, "updated");
         }
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -387,6 +390,7 @@ public class ViredroidRenderer {
     }
 
     public void requestRender() {
+        Log.i(ViredroidGLActivity.LOGTAG, "requestRender");
         activity.getCardboardView().requestRender();
     }
     

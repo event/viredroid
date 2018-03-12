@@ -51,6 +51,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.lang.StringBuilder;
@@ -73,6 +75,7 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d(LOGTAG, "onCreate");
         setContentView(R.layout.common_ui);
         CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);
@@ -147,7 +150,10 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
 
     @Override
     public void onDrawEye(Eye eye) {
-        renderer.onDrawEye(eye, imageQueue.poll());
+        Log.d(LOGTAG, "onDrawEye");
+        List<Update> updates = new ArrayList<Update>(imageQueue.size());
+        imageQueue.drainTo(updates);
+        renderer.onDrawEye(eye, updates);
         if (!cmdPump.isAlive()) {
             onStop();
         }
