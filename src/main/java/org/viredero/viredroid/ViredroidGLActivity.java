@@ -40,7 +40,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.usb.UsbManager;
 import android.hardware.usb.UsbAccessory;
-import android.widget.Toast;
+import android.widget.TextView;
+import android.view.View;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -80,7 +81,6 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);
         setCardboardView(cardboardView);
-
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         renderer = new ViredroidRenderer(this);
     }
@@ -119,6 +119,8 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
             Log.w(LOGTAG, "USB not yet connected! Please connect usb and come back");
             return;
         }
+        TextView textView = (TextView) findViewById(R.id.text_view);
+        textView.setVisibility(View.INVISIBLE);
         Log.d(LOGTAG, "got usb fd!");
         Runnable r = new UsbCmdPump(imageQueue, renderer, renderer.getScreenTexDataHandle()
                                     , renderer.getPointerTexDataHandle(), usbFd);

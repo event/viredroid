@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Viredroid</string>
+    <string name="viredroid_usb_warn">Please, plug me to PC with USB cable</string>
 </resources>
