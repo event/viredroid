@@ -20,12 +20,10 @@
 
 package org.viredero.viredroid;
 
-import com.google.vrtoolkit.cardboard.CardboardActivity;
-import com.google.vrtoolkit.cardboard.CardboardView;
-import com.google.vrtoolkit.cardboard.CardboardDeviceParams;
-import com.google.vrtoolkit.cardboard.Eye;
-import com.google.vrtoolkit.cardboard.HeadTransform;
-import com.google.vrtoolkit.cardboard.Viewport;
+import com.google.vr.sdk.base.GvrActivity;
+import com.google.vr.sdk.base.GvrView;
+import com.google.vr.sdk.base.Eye;
+import com.google.vr.sdk.base.HeadTransform;
 
 import android.content.Context;
 import android.opengl.GLES20;
@@ -387,11 +385,6 @@ public class ViredroidRenderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 6);
 
         checkGLError();
-    }
-
-    public void requestRender() {
-        Log.i(ViredroidGLActivity.LOGTAG, "requestRender");
-        activity.getCardboardView().requestRender();
     }
     
     private int loadGLShader(int type, int resId) {

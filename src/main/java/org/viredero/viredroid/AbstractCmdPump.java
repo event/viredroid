@@ -89,7 +89,6 @@ public abstract class AbstractCmdPump implements Runnable {
             return;
         }
         queue.offer(u);
-        renderer.requestRender();
     }
 
     private void do_run() throws IOException{

@@ -20,12 +20,11 @@
 
 package org.viredero.viredroid;
 
-import com.google.vrtoolkit.cardboard.CardboardActivity;
-import com.google.vrtoolkit.cardboard.CardboardView;
-import com.google.vrtoolkit.cardboard.CardboardDeviceParams;
-import com.google.vrtoolkit.cardboard.Eye;
-import com.google.vrtoolkit.cardboard.HeadTransform;
-import com.google.vrtoolkit.cardboard.Viewport;
+import com.google.vr.sdk.base.GvrActivity;
+import com.google.vr.sdk.base.GvrView;
+import com.google.vr.sdk.base.Eye;
+import com.google.vr.sdk.base.HeadTransform;
+import com.google.vr.sdk.base.Viewport;
 
 import android.content.Context;
 import android.opengl.GLES20;
@@ -60,7 +59,7 @@ import java.lang.StringBuilder;
 
 import javax.microedition.khronos.egl.EGLConfig;
 
-public class ViredroidGLActivity extends CardboardActivity implements CardboardView.StereoRenderer {
+public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRenderer {
 
     public static final String LOGTAG = "viredroid";
 
@@ -78,9 +77,9 @@ public class ViredroidGLActivity extends CardboardActivity implements CardboardV
         super.onCreate(savedInstanceState);
         Log.d(LOGTAG, "onCreate");
         setContentView(R.layout.common_ui);
-        CardboardView cardboardView = (CardboardView) findViewById(R.id.cardboard_view);
+        GvrView cardboardView = (GvrView) findViewById(R.id.cardboard_view);
         cardboardView.setRenderer(this);
-        setCardboardView(cardboardView);
+        setGvrView(cardboardView);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         renderer = new ViredroidRenderer(this);
     }
