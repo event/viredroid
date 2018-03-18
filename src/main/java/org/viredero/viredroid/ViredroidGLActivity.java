@@ -71,10 +71,13 @@ public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRe
     private Thread cmdPump;
     private ParcelFileDescriptor usbFd;
     private ViredroidRenderer renderer;
+    private ViredroidExceptionHandler excHandler;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        excHandler = new ViredroidExceptionHandler(this);
+        Thread.setDefaultUncaughtExceptionHandler(excHandler);
         Log.d(LOGTAG, "onCreate");
         setContentView(R.layout.common_ui);
         GvrView cardboardView = (GvrView) findViewById(R.id.cardboard_view);
@@ -156,7 +159,7 @@ public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRe
         imageQueue.drainTo(updates);
         renderer.onDrawEye(eye, updates);
         if (!cmdPump.isAlive()) {
-            onStop();
+            finish();
         }
     }
 
@@ -201,7 +204,7 @@ public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRe
     public void onFinishFrame(Viewport viewport) {
     }
 
-    public static void handleError(String errorText) {
+    public void handleError(String errorText) {
         //TODO: something nice should be here, like friendly text, graceful exit
         //       and angry email to developers
         throw new RuntimeException(errorText);

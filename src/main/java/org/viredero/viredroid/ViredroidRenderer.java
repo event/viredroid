@@ -139,12 +139,12 @@ public class ViredroidRenderer {
         this.activity = activity;
     }
 
-    private static void checkGLError() {
+    private void checkGLError() {
         int error = GLES20.glGetError();
         if (error != GLES20.GL_NO_ERROR) {
             String errorText = new StringBuilder("glError ").append(error)
                 .append(": ").append(GLU.gluErrorString(error)).toString();
-            ViredroidGLActivity.handleError(errorText);
+            activity.handleError(errorText);
         }
     }
 

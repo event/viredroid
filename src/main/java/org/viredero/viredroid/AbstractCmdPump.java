@@ -74,8 +74,8 @@ public abstract class AbstractCmdPump implements Runnable {
         Log.d(ViredroidGLActivity.LOGTAG, "Starting cmd pump");
         try {
             do_run();
-        } catch (IOException ioe) {
-            Log.i(ViredroidGLActivity.LOGTAG, "Pump terminated due to exception", ioe);
+        } catch (Throwable t) {
+            Log.i(ViredroidGLActivity.LOGTAG, "Pump terminated due to exception", t);
         }
     }
 
