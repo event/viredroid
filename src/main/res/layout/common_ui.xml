@@ -18,6 +18,8 @@
         android:layout_height="wrap_content"
         android:layout_width="wrap_content"
         android:layout_gravity="center"
+        android:textColor="#ffffff"
+        android:textSize="18sp"
         android:text="@string/viredroid_usb_warn" />
 
 </FrameLayout>
