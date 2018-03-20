@@ -71,16 +71,14 @@ public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRe
     private Thread cmdPump;
     private ParcelFileDescriptor usbFd;
     private ViredroidRenderer renderer;
-    private ViredroidExceptionHandler excHandler;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        excHandler = new ViredroidExceptionHandler(this);
-        Thread.setDefaultUncaughtExceptionHandler(excHandler);
         Log.d(LOGTAG, "onCreate");
         setContentView(R.layout.common_ui);
         GvrView cardboardView = (GvrView) findViewById(R.id.cardboard_view);
+        cardboardView.enableCardboardTriggerEmulation();
         cardboardView.setRenderer(this);
         setGvrView(cardboardView);
         vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -154,7 +152,6 @@ public class ViredroidGLActivity extends GvrActivity implements GvrView.StereoRe
 
     @Override
     public void onDrawEye(Eye eye) {
-        Log.d(LOGTAG, "onDrawEye");
         List<Update> updates = new ArrayList<Update>(imageQueue.size());
         imageQueue.drainTo(updates);
         renderer.onDrawEye(eye, updates);
