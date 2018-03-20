@@ -70,6 +70,7 @@ public class ViredroidRenderer {
 
     private static final float BASE_DISTANCE = 10f;
     private static final float BASE_WIDTH = 1024f;
+    private static final float BASE_SCREEN_LEVITATION = 5f;
 
     private static final float FLOOR_DEPTH = 20f;
     // We keep the light always position just above the user.
@@ -219,7 +220,7 @@ public class ViredroidRenderer {
 
         // Object first appears directly in front of user.
         Matrix.setIdentityM(modelScreen, 0);
-        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
+        Matrix.translateM(modelScreen, 0, 0, BASE_SCREEN_LEVITATION, -screenDistance);
 
         Matrix.setIdentityM(modelFloor, 0);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
@@ -408,7 +409,7 @@ public class ViredroidRenderer {
         headPos.getHeadView(headView, 0);
         Matrix.invertM(modelScreen, 0, headView, 0);
         System.arraycopy(modelScreen, 0, modelFloor, 0, 16);
-        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
+        Matrix.translateM(modelScreen, 0, 0, BASE_SCREEN_LEVITATION, -screenDistance);
         Matrix.translateM(modelFloor, 0, 0, -FLOOR_DEPTH, 0); // Floor appears below user.
     }
 
@@ -424,6 +425,6 @@ public class ViredroidRenderer {
         float scale = BASE_WIDTH < width ? BASE_WIDTH / width : 1.0f;
         screenDistance = BASE_DISTANCE + BASE_DISTANCE * scale;
         Matrix.setIdentityM(modelScreen, 0);
-        Matrix.translateM(modelScreen, 0, 0, 0, -screenDistance);
+        Matrix.translateM(modelScreen, 0, 0, BASE_SCREEN_LEVITATION, -screenDistance);
     }
 }
