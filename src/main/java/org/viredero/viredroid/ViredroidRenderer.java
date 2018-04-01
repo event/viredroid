@@ -68,12 +68,11 @@ public class ViredroidRenderer {
     private static final int BYTES_PER_FLOAT = 4;
     private static final int BYTES_PER_SHORT = 2;
 
-    private static final float BASE_DISTANCE = 10f;
+    private static final float BASE_DISTANCE = 3f;
     private static final float BASE_WIDTH = 1024f;
-    private static final float BASE_SCREEN_LEVITATION = 5f;
+    private static final float BASE_SCREEN_LEVITATION = -4f;
 
     private static final float FLOOR_DEPTH = 20f;
-    // We keep the light always position just above the user.
     public static final float[] FLOOR_COORDS = new float[] {
         200f, 0, -200f,
         -200f, 0, -200f,
@@ -95,6 +94,7 @@ public class ViredroidRenderer {
     public static final float[] FLOOR_COLOR = new float[] {
         0.0f, 0.3398f, 0.9023f, 1.0f};
 
+    // We keep the light always position just above the user.
     private static final float[] LIGHT_POS_IN_WORLD_SPACE = new float[] {
         0.0f, 2.0f, 0.0f, 1.0f };
 
@@ -236,7 +236,7 @@ public class ViredroidRenderer {
         int slices = 50;
         float width = 16.0f;
         float height = 9.0f;
-        float depth = -1.0f;
+        float depth = -4f;
 
         screenVertices = ByteBuffer.allocateDirect(
             stacks * slices * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
@@ -248,39 +248,43 @@ public class ViredroidRenderer {
             (stacks - 1) * 2 * (slices + 2) * BYTES_PER_SHORT)
             .order(ByteOrder.nativeOrder()).asShortBuffer();
 
-        float v_sector = (float)Math.PI / (stacks - 1);
-        float h_sector = (float)Math.PI / (slices - 1);
+        float vertSector = (float)Math.PI / (stacks - 1);
+        float horSector = (float)Math.PI / (slices - 1);
+        // float horSectorForZ = (float)Math.PI / (slices - 1) / 2;
+        // float horSectorZOffset = (float)Math.PI / 12.0f;
         float[] ys = new float[stacks];
-        float[] xzs = new float[slices * 2];
+        float[] xs = new float[slices];
+        float[] zs = new float[slices];
         float[] dws = new float[slices];
         for (int i = 0; i < stacks; i += 1) {
-             ys[i] = (float)Math.cos(i * v_sector) * height;
+             ys[i] = (float)Math.cos(i * vertSector) * height;
         }
-        float realw = 0f;
-        float oldx = width;
-        float oldz = 0f;
+        float realW = 0f;
+        float oldX = width;
+        float oldZ = 0f;
         for (int i = 0; i < slices; i += 1) {
-            float x = (float)Math.cos(i * h_sector) * width;
-            float z = (float)Math.sin(i * h_sector) * depth;
-            xzs[i*2] = x;
-            xzs[i*2 + 1] = z;
-            float dw = (float)Math.sqrt((oldx - x)*(oldx - x) + (oldz - z)*(oldz - z));
+            float x = (float)Math.cos(i * horSector) * width;
+            float z = (float)Math.sin(i * horSector) * depth;
+//            float z = (float)Math.sin(horSectorZOffset + i * horSectorForZ) * depth;
+            xs[i] = x;
+            zs[i] = z;
+            float dw = (float)Math.sqrt((oldX - x)*(oldX - x) + (oldZ - z)*(oldZ - z));
             dws[i] = dw;
-            realw += dw;
-            oldx = x;
-            oldz = z;
+            realW += dw;
+            oldX = x;
+            oldZ = z;
         }
         for (int i = 0; i < stacks; i += 1) {
             float t = 1 - .5f * (ys[i] + height) / height;
-            float old_s = 1f;
+            float oldS = 1f;
             for (int j = 0; j < slices; j += 1) {
-                screenVertices.put(xzs[j*2]);
+                screenVertices.put(xs[j]);
                 screenVertices.put(ys[i]);
-                screenVertices.put(xzs[j*2 + 1]);
-                float s = old_s - (dws[j]/realw);
+                screenVertices.put(zs[j]);
+                float s = oldS - (dws[j]/realW);
                 screenTextures.put(s);
                 screenTextures.put(t);
-                old_s = s;
+                oldS = s;
             }
             if (i < stacks - 1) {
                 if (i > 0) {
@@ -325,14 +329,15 @@ public class ViredroidRenderer {
         Matrix.multiplyMV(lightPosInEyeSpace, 0, eyeView, 0, LIGHT_POS_IN_WORLD_SPACE, 0);
 
         float[] perspective = eye.getPerspective(Z_NEAR, Z_FAR);
-        Matrix.multiplyMM(modelView, 0, eyeView, 0, modelScreen, 0);
-        Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
-        drawScreen(updates);
-
         Matrix.multiplyMM(modelView, 0, eyeView, 0, modelFloor, 0);
         Matrix.multiplyMM(modelViewProjection, 0, perspective, 0,
                           modelView, 0);
         drawFloor();
+
+        Matrix.multiplyMM(modelView, 0, eyeView, 0, modelScreen, 0);
+        Matrix.multiplyMM(modelViewProjection, 0, perspective, 0, modelView, 0);
+        drawScreen(updates);
+
     }
 
     private void drawScreen(List<Update> updates) {
