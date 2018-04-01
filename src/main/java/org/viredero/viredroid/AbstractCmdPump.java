@@ -24,6 +24,7 @@ import android.util.Log;
 import android.os.ParcelFileDescriptor;
 
 import java.lang.Runnable;
+import java.lang.InterruptedException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -32,6 +33,12 @@ import java.io.BufferedInputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 public abstract class AbstractCmdPump implements Runnable {
 
@@ -85,20 +92,38 @@ public abstract class AbstractCmdPump implements Runnable {
             return;
         }
         Update u = cmd.exec();
-        if (u == null) {
-            return;
+        if (u != null) {
+            queue.offer(u);
         }
-        queue.offer(u);
     }
 
     private void do_run() throws IOException{
         boolean initFinished = false;
+        ExecutorService execServ = Executors.newSingleThreadExecutor();
         is = createIS();
         is.skip(is.available()); //cleanup
         initPeer();
         initCommands();
         while (! Thread.interrupted()) {
-            int code = is.read();
+            Callable<Integer> read = () -> {return is.read();};
+            Future<Integer> fRead = execServ.submit(read);
+            int code = 0;
+            boolean readSucceed = false;
+            try {
+                while (! readSucceed) {
+                    try {
+                        code = fRead.get(10, TimeUnit.SECONDS);
+                        readSucceed = true;
+                    } catch (TimeoutException te) {
+                        Log.w(ViredroidGLActivity.LOGTAG, "Long time since last command");
+                        queue.offer(new IndicateNoCmdUpdate(screenTexDataHandle, screenWidth, screenHeight));
+                        code = 0; // avoid compile error
+                    }
+                }
+            } catch (Exception e) {
+                Log.w(ViredroidGLActivity.LOGTAG, "Failed", e);
+                return;
+            }
             Log.d(ViredroidGLActivity.LOGTAG, String.format("Received command code %d", code));
             if (code < 0 || code >= commands.size()) {
                 throw new RuntimeException("Received unknown command " + code);
