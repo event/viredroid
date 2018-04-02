@@ -70,7 +70,14 @@ public class ViredroidRenderer {
 
     private static final float BASE_DISTANCE = 1f;
     private static final float BASE_WIDTH = 1024f;
-    private static final float BASE_SCREEN_LEVITATION = -4f;
+    private static final float BASE_SCREEN_LEVITATION = 2f;
+
+    private static final int SCREEN_SLICES = 50; // horizontal segments
+    private static final int SCREEN_STACKS = 50; // vertical segments
+    // screen is semicircle in front of the user. Depth goes from zero on sides to MAX_DEPTH in the center
+    private static final float SCREEN_WIDTH = 16f;
+    private static final float SCREEN_HEIGHT = 9f;
+    private static final float SCREEN_MAX_DEPTH = -8f;
 
     private static final float FLOOR_DEPTH = 20f;
     public static final float[] FLOOR_COORDS = new float[] {
@@ -232,49 +239,49 @@ public class ViredroidRenderer {
     
 
     private void fillScreenCoords() {
-        int stacks = 50;
-        int slices = 50;
-        float width = 16.0f;
-        float height = 9.0f;
-        float depth = -8f;
+        int SCREEN_STACKS = 50;
+        int SCREEN_SLICES = 50;
+        float SCREEN_WIDTH = 16.0f;
+        float SCREEN_HEIGHT = 9.0f;
+        float SCREEN_MAX_DEPTH = -8f;
 
         screenVertices = ByteBuffer.allocateDirect(
-            stacks * slices * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
+            SCREEN_STACKS * SCREEN_SLICES * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
             .order(ByteOrder.nativeOrder()).asFloatBuffer();
         screenTextures = ByteBuffer.allocateDirect(
-            stacks * slices * COORDS_PER_TEXTURE * BYTES_PER_FLOAT)
+            SCREEN_STACKS * SCREEN_SLICES * COORDS_PER_TEXTURE * BYTES_PER_FLOAT)
             .order(ByteOrder.nativeOrder()).asFloatBuffer();
         screenIndices = ByteBuffer.allocateDirect(
-            (stacks - 1) * 2 * (slices + 2) * BYTES_PER_SHORT)
+            (SCREEN_STACKS - 1) * 2 * (SCREEN_SLICES + 2) * BYTES_PER_SHORT)
             .order(ByteOrder.nativeOrder()).asShortBuffer();
 
-        float[] ys = new float[stacks];
-        float[] xs = new float[slices];
-        float[] zs = new float[slices];
-        float[] dws = new float[slices];
-        float dx = width / slices * 2f;
-        float dy = height / stacks * 2f;
-        ys[0] = height;
-        for (int i = 1; i < stacks; i += 1) {
+        float[] ys = new float[SCREEN_STACKS];
+        float[] xs = new float[SCREEN_SLICES];
+        float[] zs = new float[SCREEN_SLICES];
+        float[] dws = new float[SCREEN_SLICES];
+        float dx = SCREEN_WIDTH / SCREEN_SLICES * 2f;
+        float dy = SCREEN_HEIGHT / SCREEN_STACKS * 2f;
+        ys[0] = SCREEN_HEIGHT;
+        for (int i = 1; i < SCREEN_STACKS; i += 1) {
             ys[i] = ys[i-1] - dy;
         }
         float realW = 0f;
-        float horSector = (float)Math.PI / (slices - 1);
-        xs[0] = width;
+        float horSector = (float)Math.PI / (SCREEN_SLICES - 1);
+        xs[0] = SCREEN_WIDTH;
         zs[0] = 0f;
         dws[0] = dx;
-        for (int i = 1; i < slices; i += 1) {
+        for (int i = 1; i < SCREEN_SLICES; i += 1) {
             xs[i] = xs[i-1] - dx;
-            zs[i] = (float)Math.sin(i * horSector) * depth;
+            zs[i] = (float)Math.sin(i * horSector) * SCREEN_MAX_DEPTH;
             float dz = zs[i - 1] - zs[i];
             float dw = (float)Math.sqrt(dx * dx + dz*dz);
             dws[i] = dw;
             realW += dw;
         }
-        for (int i = 0; i < stacks; i += 1) {
-            float t = 1 - .5f * (ys[i] + height) / height;
+        for (int i = 0; i < SCREEN_STACKS; i += 1) {
+            float t = 1 - .5f * (ys[i] + SCREEN_HEIGHT) / SCREEN_HEIGHT;
             float oldS = 1f;
-            for (int j = 0; j < slices; j += 1) {
+            for (int j = 0; j < SCREEN_SLICES; j += 1) {
                 screenVertices.put(xs[j]);
                 screenVertices.put(ys[i]);
                 screenVertices.put(zs[j]);
@@ -283,17 +290,17 @@ public class ViredroidRenderer {
                 screenTextures.put(t);
                 oldS = s;
             }
-            if (i < stacks - 1) {
+            if (i < SCREEN_STACKS - 1) {
                 if (i > 0) {
                     // Degenerate begin: repeat first vertex
-                    screenIndices.put((short)(i * slices));
+                    screenIndices.put((short)(i * SCREEN_SLICES));
                 }
-                for (int j = 0; j < slices; j += 1) {
+                for (int j = 0; j < SCREEN_SLICES; j += 1) {
                     // One part of the strip
-                    screenIndices.put((short)(i * slices + j));
-                    screenIndices.put((short)((i + 1) * slices + j));
+                    screenIndices.put((short)(i * SCREEN_SLICES + j));
+                    screenIndices.put((short)((i + 1) * SCREEN_SLICES + j));
                 }
-                if (i < stacks - 2) {
+                if (i < SCREEN_STACKS - 2) {
                     // Degenerate end: repeat last vertex
                     screenIndices.put(screenIndices.get(screenIndices.position() - 1));
                 }
