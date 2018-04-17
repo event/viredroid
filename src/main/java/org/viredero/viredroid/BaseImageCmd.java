@@ -32,43 +32,48 @@ import java.nio.ByteOrder;
 import java.util.LinkedList;
 import java.util.Queue;
 
-public class ImageCmd implements Command {
+public abstract class BaseImageCmd implements Command {
 
     private static final int QUEUE_SIZE = 2;
 
     private int screenTexDataHandle;
     private DataInputStream dis;
     private AbstractCmdPump cmdPump;
+    // this queue is required as bytebuffer is shared between this (pump) thread
+    //   and gui (viredroidrenderer) thread. Even though pump is much slower then rendering...
     private Queue<ByteBuffer> bufQueue;
     
-    public ImageCmd(AbstractCmdPump cmdPump, InputStream s
+    public BaseImageCmd(AbstractCmdPump cmdPump, InputStream s
                     , int screenTexDataHandle) {
         this.cmdPump = cmdPump;
         this.dis = new DataInputStream(s);
         this.screenTexDataHandle = screenTexDataHandle;
+        bufQueue = new LinkedList<ByteBuffer>();
+        int size = 3 * cmdPump.getWidth() * cmdPump.getHeight();
+        for (int i = 0; i < QUEUE_SIZE; i += 1) {
+            bufQueue.add(ByteBuffer.allocateDirect(size));
+        }
     }
+
+    public int getScreenTexDataHandle() {
+        return screenTexDataHandle;
+    }
+
+    protected abstract Update getScreenUpdate(int width, int height, int xOffset
+                                              , int yOffset, ByteBuffer imageBuf);
     
     @Override
     public Update exec() throws IOException {
-        if (bufQueue == null) {
-            int size = 3 * cmdPump.getWidth() * cmdPump.getHeight();
-            bufQueue = new LinkedList<ByteBuffer>();
-            for (int i = 0; i < QUEUE_SIZE; i += 1) {
-                bufQueue.add(ByteBuffer.allocateDirect(size)
-                             .order(ByteOrder.nativeOrder()));
-            }
-        }
         int width = dis.readInt();
         int height = dis.readInt();
         int xOffset = dis.readInt();
         int yOffset = dis.readInt();
-        int imageSize = 3 * width * height;
+        int imageSize = dis.readInt();
         if (imageSize <= 0) {
             throw new RuntimeException("image size <= 0");
         }
         ByteBuffer imageBuf = bufQueue.poll();
         byte[] buf = imageBuf.array();
-        imageBuf.position(0);
         int totalRead = 0;
         while (imageSize > 0) {
             int read = dis.read(buf, totalRead, imageSize);
@@ -78,18 +83,19 @@ public class ImageCmd implements Command {
             imageSize -= read;
             totalRead += read;
         }
-        imageBuf.position(0);
+        imageBuf.limit(totalRead);
         bufQueue.offer(imageBuf);
-        return new ScreenUpdate(screenTexDataHandle, width, height
-                                , xOffset, yOffset, imageBuf);
+        return getScreenUpdate(width, height, xOffset
+                               , yOffset, imageBuf);
     }
 
     @Override
     public void skip() throws IOException {
         int width = dis.readInt();
         int height = dis.readInt();
-        int imageSize = 3 * width * height;
-        dis.skipBytes(8 + imageSize); //8 is x and y offsets
+        dis.skipBytes(8); // x and y offsets
+        int imageSize = dis.readInt();
+        dis.skipBytes(imageSize);
     }
 
 }

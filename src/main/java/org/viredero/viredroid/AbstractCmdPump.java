@@ -44,8 +44,10 @@ public abstract class AbstractCmdPump implements Runnable {
 
     private static final int VIREDERO_PROTO_VERSION = 1;
     private static final int SCREEN_FMT_RGB = 1;
+    private static final int SCREEN_FMT_PNG = 2;
     private static final int POINTER_FMT_RGBA = 1; 
     private static final int INIT_REPLY_CMD_IDX = 1;
+    private static final int IMAGE_CMD_IDX = 2;
 
     private List<Command> commands;
     private BlockingQueue<Update> queue;
@@ -69,9 +71,10 @@ public abstract class AbstractCmdPump implements Runnable {
 
     private void initCommands() throws IOException {
         commands = new ArrayList<Command>(4);
-        commands.add(new ErrorCmd()); // we send Init, not receive it
+        Command errCmd = new ErrorCmd();
+        commands.add(errCmd); // we send Init, not receive it
         commands.add(new InitReplyCmd(this, is, screenTexDataHandle, pointTexDataHandle));
-        commands.add(new ImageCmd(this, is, screenTexDataHandle));
+        commands.add(errCmd);
         commands.add(new PointerCmd(this, is, pointTexDataHandle));
         commands.add(new DistanceCmd(is));
     }
@@ -142,7 +145,7 @@ public abstract class AbstractCmdPump implements Runnable {
         }
         os.write(0); //init cmd code
         os.write(VIREDERO_PROTO_VERSION);
-        os.write(SCREEN_FMT_RGB);    // OR'ed screen image format constants
+        os.write(SCREEN_FMT_RGB | SCREEN_FMT_PNG);    // OR'ed screen image format constants
         os.write(POINTER_FMT_RGBA);  // OR'ed pointer image format constants
         os.flush();
         os.close();
@@ -152,6 +155,16 @@ public abstract class AbstractCmdPump implements Runnable {
         screenWidth = width;
         screenHeight = height;
         renderer.setDimentions(width, height);
+    }
+
+    public void setScreenFormat(int fmt) {
+        if (fmt == SCREEN_FMT_RGB) {
+            Log.i(ViredroidGLActivity.LOGTAG, "Will user RGB image format");
+            commands.set(IMAGE_CMD_IDX, new ImageRGBCmd(this, is, screenTexDataHandle));
+        } else if (fmt == SCREEN_FMT_PNG) {
+            Log.i(ViredroidGLActivity.LOGTAG, "Will user PNG image format");
+            commands.set(IMAGE_CMD_IDX, new ImagePNGCmd(this, is, screenTexDataHandle));
+        }
     }
 
     public int getWidth() {

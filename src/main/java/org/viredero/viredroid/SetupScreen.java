@@ -32,7 +32,7 @@ public class SetupScreen implements Update {
     private final int pointerTexId;
 
     public SetupScreen(int screenTexId, int pointerTexId, int width
-                       , int height, int screenCmdFmt, int pointerCmdFmt) {
+                       , int height) {
         this.width = width;
         this.height = height;
         this.screenTexId = screenTexId;
