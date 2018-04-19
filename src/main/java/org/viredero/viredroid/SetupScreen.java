@@ -23,7 +23,6 @@ package org.viredero.viredroid;
 import java.nio.ByteBuffer;
 import android.opengl.GLES20;
 import java.util.Arrays;
-import java.nio.ByteOrder;
 
 public class SetupScreen implements Update {
     private final int width;
@@ -48,8 +47,7 @@ public class SetupScreen implements Update {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D
                                , GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_NEAREST);
  
-        ByteBuffer imageBuf = ByteBuffer.allocateDirect(bytes_per_pix * width * height)
-            .order(ByteOrder.nativeOrder());
+        ByteBuffer imageBuf = ByteBuffer.allocateDirect(bytes_per_pix * width * height);
         byte[] buf = imageBuf.array();
         Arrays.fill(buf, value);
         imageBuf.position(0);

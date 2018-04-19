@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import android.util.Log;
 
@@ -65,11 +64,9 @@ public class PointerCmd implements Command {
                 throw new RuntimeException("image size <= 0");
             }
             if (width != rWidth || height != rHeight) {
-                eraseImageBytes = ByteBuffer.allocateDirect(imageSize)
-                    .order(ByteOrder.nativeOrder());
+                eraseImageBytes = ByteBuffer.allocateDirect(imageSize);
                 Arrays.fill(eraseImageBytes.array(), (byte)0);
-                pointerImageBytes = ByteBuffer.allocateDirect(imageSize)
-                    .order(ByteOrder.nativeOrder());
+                pointerImageBytes = ByteBuffer.allocateDirect(imageSize);
             }
             byte[] buf = pointerImageBytes.array();
             int totalRead = 0;
@@ -92,8 +89,7 @@ public class PointerCmd implements Command {
         ByteBuffer pntr = pointerImageBytes;
         if (eraseWidth != width || eraseHeight != height) {
             pntr = ByteBuffer
-                .allocateDirect(4 * eraseWidth * eraseHeight)
-                .order(ByteOrder.nativeOrder());
+                .allocateDirect(4 * eraseWidth * eraseHeight);
             byte[] buf = pntr.array();
             for (int i = 0; i < eraseHeight; i += 1) {
                 pointerImageBytes.position(width * i * 4);

@@ -22,7 +22,6 @@ package org.viredero.viredroid;
 
 import java.nio.ByteBuffer;
 import android.opengl.GLES20;
-import java.nio.ByteOrder;
 
 public class IndicateNoCmdUpdate extends MultiUpdate {
     private static final int BORDER_WIDTH = 10;
@@ -30,7 +29,7 @@ public class IndicateNoCmdUpdate extends MultiUpdate {
     private static final ByteBuffer BORDERS_BYTES;
     
     static {
-        BORDERS_BYTES = ByteBuffer.allocateDirect(MAX_PIXELS * 3).order(ByteOrder.nativeOrder());
+        BORDERS_BYTES = ByteBuffer.allocateDirect(MAX_PIXELS * 3);
         byte[] buf = BORDERS_BYTES.array();
         for (int i = 0; i < MAX_PIXELS; i += 1) {
             buf[3*i + 1] = 127;
