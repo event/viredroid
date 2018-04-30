@@ -78,7 +78,6 @@ public class PointerCmd implements Command {
                 imageSize -= read;
                 totalRead += read;
             }
-            pointerImageBytes.position(0);
             width = rWidth;
             height = rHeight;
         } else if (width == 0) {
@@ -103,11 +102,7 @@ public class PointerCmd implements Command {
     }
 
     private int limitDim(int offset, int val, int limit) {
-        if (offset + val <= limit) {
-            return val;
-        } else {
-            return limit - offset;
-        }
+        return Math.min(val, limit - offset);
     }
 
     @Override
