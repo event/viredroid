@@ -42,6 +42,10 @@ public abstract class BaseImageCmd implements Command {
     //   and gui (viredroidrenderer) thread. Even though pump is much slower then rendering...
     private Queue<ByteBuffer> bufQueue;
     
+    protected BaseImageCmd(InputStream s) {
+        this.dis = new DataInputStream(s);
+    }
+
     public BaseImageCmd(AbstractCmdPump cmdPump, InputStream s
                     , int screenTexDataHandle) {
         this.cmdPump = cmdPump;

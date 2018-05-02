@@ -79,7 +79,7 @@ public class ViredroidRenderer {
     private static final float SCREEN_HEIGHT = 9f;
     private static final float SCREEN_MAX_DEPTH = -8f;
 
-    private static final float FLOOR_DEPTH = 20f;
+    private static final float FLOOR_DEPTH = 40f;
     public static final float[] FLOOR_COORDS = new float[] {
         200f, 0, -200f,
         -200f, 0, -200f,
@@ -239,12 +239,6 @@ public class ViredroidRenderer {
     
 
     private void fillScreenCoords() {
-        int SCREEN_STACKS = 50;
-        int SCREEN_SLICES = 50;
-        float SCREEN_WIDTH = 16.0f;
-        float SCREEN_HEIGHT = 9.0f;
-        float SCREEN_MAX_DEPTH = -8f;
-
         screenVertices = ByteBuffer.allocateDirect(
             SCREEN_STACKS * SCREEN_SLICES * COORDS_PER_VERTEX * BYTES_PER_FLOAT)
             .order(ByteOrder.nativeOrder()).asFloatBuffer();
