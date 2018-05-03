@@ -79,7 +79,7 @@ public class ViredroidRenderer {
     private static final float SCREEN_HEIGHT = 9f;
     private static final float SCREEN_MAX_DEPTH = -8f;
 
-    private static final float FLOOR_DEPTH = 40f;
+    private static final float FLOOR_DEPTH = 20f;
     public static final float[] FLOOR_COORDS = new float[] {
         200f, 0, -200f,
         -200f, 0, -200f,
@@ -253,8 +253,8 @@ public class ViredroidRenderer {
         float[] xs = new float[SCREEN_SLICES];
         float[] zs = new float[SCREEN_SLICES];
         float[] dws = new float[SCREEN_SLICES];
-        float dx = SCREEN_WIDTH / SCREEN_SLICES * 2f;
-        float dy = SCREEN_HEIGHT / SCREEN_STACKS * 2f;
+        float dx = SCREEN_WIDTH / (SCREEN_SLICES - 1) * 2f;
+        float dy = SCREEN_HEIGHT / (SCREEN_STACKS - 1) * 2f;
         ys[0] = SCREEN_HEIGHT;
         for (int i = 1; i < SCREEN_STACKS; i += 1) {
             ys[i] = ys[i-1] - dy;
@@ -268,21 +268,21 @@ public class ViredroidRenderer {
             xs[i] = xs[i-1] - dx;
             zs[i] = (float)Math.sin(i * horSector) * SCREEN_MAX_DEPTH;
             float dz = zs[i - 1] - zs[i];
-            float dw = (float)Math.sqrt(dx * dx + dz*dz);
+            float dw = (float)Math.sqrt(dx * dx + dz * dz);
             dws[i] = dw;
             realW += dw;
         }
+        float revDblHeight = .5f / SCREEN_HEIGHT;
         for (int i = 0; i < SCREEN_STACKS; i += 1) {
-            float t = 1 - .5f * (ys[i] + SCREEN_HEIGHT) / SCREEN_HEIGHT;
-            float oldS = 1f;
+            float texV = 1 - (ys[i] + SCREEN_HEIGHT) * revDblHeight;
+            float texU = 1f;
             for (int j = 0; j < SCREEN_SLICES; j += 1) {
                 screenVertices.put(xs[j]);
                 screenVertices.put(ys[i]);
                 screenVertices.put(zs[j]);
-                float s = oldS - (dws[j]/realW);
-                screenTextures.put(s);
-                screenTextures.put(t);
-                oldS = s;
+                screenTextures.put(texU);
+                screenTextures.put(texV);
+                texU -= dws[j]/realW;
             }
             if (i < SCREEN_STACKS - 1) {
                 if (i > 0) {
