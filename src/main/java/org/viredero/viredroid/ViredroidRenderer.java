@@ -273,16 +273,20 @@ public class ViredroidRenderer {
             realW += dw;
         }
         float revDblHeight = .5f / SCREEN_HEIGHT;
+        float texU = .995f;
         for (int i = 0; i < SCREEN_STACKS; i += 1) {
             float texV = 1 - (ys[i] + SCREEN_HEIGHT) * revDblHeight;
-            float texU = 1f;
             for (int j = 0; j < SCREEN_SLICES; j += 1) {
                 screenVertices.put(xs[j]);
                 screenVertices.put(ys[i]);
                 screenVertices.put(zs[j]);
-                screenTextures.put(texU);
+                if (i > 0) { //take one from previous row
+                    screenTextures.put(screenTextures.get((((i-1) * SCREEN_SLICES) + j) * 2));
+                } else {
+                    screenTextures.put(texU);
+                    texU -= dws[j]/realW;
+                }
                 screenTextures.put(texV);
-                texU -= dws[j]/realW;
             }
             if (i < SCREEN_STACKS - 1) {
                 if (i > 0) {
