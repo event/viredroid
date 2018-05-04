@@ -50,9 +50,12 @@ public class PointerCmd implements Command {
 
     @Override
     public Update exec() throws IOException {
-        PointerUpdate erase = new PointerUpdate(
-            pointerTexDataHandle, eraseWidth, eraseHeight
-            , x, y, eraseImageBytes);
+        PointerUpdate erase = null;
+        if (eraseWidth > 0 && eraseHeight > 0) {
+            erase = new PointerUpdate(
+                pointerTexDataHandle, eraseWidth, eraseHeight
+                , x, y, eraseImageBytes);
+        }
         x = dis.readInt();
         y = dis.readInt();
         boolean hasCursor = dis.readBoolean();
@@ -81,7 +84,9 @@ public class PointerCmd implements Command {
             width = rWidth;
             height = rHeight;
         } else if (width == 0) {
-            throw new RuntimeException("Cannot draw empty pointer");
+            eraseWidth = 0;
+            eraseHeight = 0;
+            return erase;
         }
         eraseWidth = limitDim(x, width, cmdPump.getWidth());
         eraseHeight = limitDim(y, height, cmdPump.getHeight());
@@ -96,9 +101,14 @@ public class PointerCmd implements Command {
             }
             pointerImageBytes.position(0);
         }
-        return new MultiUpdate(erase, new PointerUpdate(
-                                   pointerTexDataHandle, eraseWidth, eraseHeight
-                                   , x, y, pntr));
+        PointerUpdate draw = new PointerUpdate(
+            pointerTexDataHandle, eraseWidth, eraseHeight
+            , x, y, pntr);
+        if (erase == null) {
+            return draw;
+        } else {
+            return new MultiUpdate(erase, draw);
+        }
     }
 
     private int limitDim(int offset, int val, int limit) {
